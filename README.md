@@ -272,6 +272,8 @@ python3 scripts/validate_opportunity_prd.py path/to/report-or-prd.md
 - 不默认抓取生产数据。
 - 公开 URL 会被快照成本地文本，便于复核。
 - 本地运行产物默认写入 `tests/runs/`，该目录已被 `.gitignore` 忽略。
+- `tests/fixtures/` 只保留合成样例和本地校验数据，用于复现脚本行为。
+- 发布到 GitHub 的项目不包含 `tests/runs/` 运行输出、缓存目录或本机临时目录。
 - 外部模型调用由用户自己的环境负责，Skill 不托管任何服务器。
 
 ## 目录结构
@@ -286,7 +288,7 @@ blcaptain-digg-prd/
 ├── references/              # 方法论、Gate、证据规则、运行说明
 ├── templates/               # 配置、证据包、机会评估、PRD 模板
 ├── scripts/                 # 模型检查、证据扫描、工作流编排、校验脚本
-└── tests/fixtures/          # 可复现的本地样本
+└── tests/fixtures/          # 可复现的合成测试样例
 ```
 
 ## 验证标准

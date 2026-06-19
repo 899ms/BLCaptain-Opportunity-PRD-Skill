@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.2.2
+
+### Changed
+
+- Clarified the public release boundary for generated run outputs and synthetic test fixtures.
+- Changed generated workflow and model-health reports to display repository-relative paths when outputs stay inside the project.
+- Removed local ignored run-output directories from the release workspace.
+
+### Verified
+
+- Confirmed there are no empty local release directories.
+- Confirmed `tests/runs/` is not tracked by Git.
+- Confirmed tracked files do not contain local path or private source traces.
+
 ## v1.2.1
 
 ### Changed

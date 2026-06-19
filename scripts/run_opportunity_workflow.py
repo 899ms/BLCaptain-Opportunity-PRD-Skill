@@ -37,6 +37,14 @@ ROLE_TAGS = {
 }
 
 
+def display_path(path: Path) -> str:
+    resolved = path.resolve()
+    try:
+        return str(resolved.relative_to(ROOT))
+    except ValueError:
+        return str(resolved)
+
+
 def write_text(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
@@ -827,7 +835,7 @@ def run_workflow(args: argparse.Namespace) -> dict[str, Any]:
         "idea": args.idea,
         "decision": decision,
         "mode": mode,
-        "output_dir": str(output_dir),
+        "output_dir": display_path(output_dir),
         "evidence_count": evidence_payload["stats"]["evidence_count"],
         "reverse_count": reverse_payload["stats"]["reverse_count"],
         "commercial_signal_count": evidence_payload["stats"]["commercial_signal_count"],

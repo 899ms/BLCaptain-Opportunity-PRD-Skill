@@ -59,6 +59,7 @@ def resolve_path(value: str) -> Path:
 
 
 def portable_path(path: Path) -> str:
+    path = path.resolve()
     try:
         return str(path.relative_to(ROOT))
     except ValueError:
@@ -299,10 +300,10 @@ def main(argv: list[str]) -> int:
     write_json(
         output_dir / "real-run-audit.json",
         {
-            "case_config": str(case_path),
+            "case_config": portable_path(case_path),
             "idea": case.get("idea", ""),
-            "positive_sources": str(positive_path),
-            "reverse_sources": str(reverse_path),
+            "positive_sources": portable_path(positive_path),
+            "reverse_sources": portable_path(reverse_path),
             "source_audit": audit_items,
             "model_results": model_results,
         },
@@ -320,8 +321,8 @@ def main(argv: list[str]) -> int:
             args.run_discussion,
         )
 
-    print(f"真实运行准备完成：{output_dir}")
-    print(f"来源配置：{positive_path} / {reverse_path}")
+    print(f"真实运行准备完成：{portable_path(output_dir)}")
+    print(f"来源配置：{portable_path(positive_path)} / {portable_path(reverse_path)}")
     if workflow_summary:
         print(f"工作流结果：{workflow_summary['decision']}，输出目录：{workflow_summary['output_dir']}")
     return 0

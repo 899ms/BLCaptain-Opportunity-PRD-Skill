@@ -19,6 +19,14 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CONFIG = ROOT / "templates" / "model-pool.example.json"
 
 
+def display_path(path: Path) -> str:
+    resolved = path.resolve()
+    try:
+        return str(resolved.relative_to(ROOT))
+    except ValueError:
+        return str(resolved)
+
+
 def load_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -140,7 +148,7 @@ def to_markdown(config_path: Path, results: list[dict[str, Any]]) -> str:
     lines = [
         "# 模型能力池健康检查",
         "",
-        f"- 配置文件：{config_path}",
+        f"- 配置文件：{display_path(config_path)}",
         f"- 置信模式：{mode}",
         f"- 可用模型数：{ok_count}",
         "",
