@@ -29,6 +29,18 @@
     <td align="center"><strong>先找真实证据，再做多模型讨论与 Gate 决策</strong></td>
     <td align="center"><strong>通过 Go 后，生成可交付开发的商业化 PRD</strong></td>
   </tr>
+  <tr>
+    <td width="50%">
+      <img src="assets/screenshots/community-source-map.png" alt="BLCaptain Opportunity PRD Skill 社区证据源头地图截图">
+    </td>
+    <td width="50%">
+      <img src="assets/screenshots/demand-methodology-router.png" alt="BLCaptain Opportunity PRD Skill 需求分析方法论路由截图">
+    </td>
+  </tr>
+  <tr>
+    <td align="center"><strong>不固定平台，按场景动态路由社区证据源头</strong></td>
+    <td align="center"><strong>按证据缺口选择方法论，倒推 MVP、Gate 和 PRD</strong></td>
+  </tr>
 </table>
 
 ---
@@ -129,7 +141,31 @@ BLCaptain Opportunity PRD Skill 解决的是这个问题：先从社区评论、
 
 反向证据无法回应时，输出 Pivot 或 No-Go，而不是硬写 PRD。
 
-### 5. 工程实施级 PRD
+### 5. 需求分析方法论
+
+方法论不是装饰章节，也不是把所有经典框架机械套一遍。Skill 会根据证据缺口选择最小方法论组合，默认只选 2 到 4 个；每个方法都必须影响 Gate 判断、MVP 边界或 PRD 结论。
+
+| 触发条件 | 方法 | 关键产出 | 对结果的影响 |
+|---|---|---|---|
+| 输入模糊 | 6W2H | 用户、场景、动作、频次、成本、限制 | 明确调研范围和平台路由 |
+| 原话多但原因散 | 5Why + JTBD | 根因和用户真正要完成的任务 | 防止把表层抱怨写成需求 |
+| 需要产品感 | NABC | Need、Approach、Benefit、Competition | 判断方案是否有清晰差异化 |
+| 需要商业判断 | ROI + 商业画布关键格 | 成本节省、付费锚点、渠道、单位经济 | 决定 Watch、Go 或补证方向 |
+| 功能超过 3 个 | KANO | P0、P1、删除项 | 收窄 MVP，避免 P0 膨胀 |
+| 外部环境影响大 | PEST | 政策、经济、社会、技术风险 | 识别合规、渠道和时机风险 |
+| 需要拆执行 | 拆推评算 | 拆对象、推路径、评价值、算成本 | 把机会拆成 7 天实验和任务 DoD |
+| 需要结构化沟通 | MECE + 金字塔 | 分类不重不漏，结论先行 | 让 PRD 能被产品、研发、测试快速理解 |
+
+输出时不会只写方法名称，而会写清楚：
+
+- 为什么选择这个方法。
+- 该方法得出的关键结论。
+- 结论引用了哪些 evidence_id。
+- 它如何改变 MVP、Gate、7 天实验或 PRD 边界。
+
+证据不足时，方法论不能替代补证；方法论结论也不能覆盖反向证据。
+
+### 6. 工程实施级 PRD
 
 只有 Go 后才生成最终 PRD。最终 PRD 必须能指导后续开发，至少包含：
 
