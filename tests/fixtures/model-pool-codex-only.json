@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "models": [
+    {
+      "id": "codex-host",
+      "display_name": "Codex Host",
+      "method": "codex_builtin",
+      "capability_tags": ["orchestration", "file_generation", "validation"]
+    }
+  ]
+}

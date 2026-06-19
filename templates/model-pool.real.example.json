@@ -28,12 +28,6 @@
       "command": "your-model-cli --once",
       "capability_tags": ["general"],
       "test_prompt": "ping"
-    },
-    {
-      "id": "agent-host",
-      "display_name": "Agent Host",
-      "method": "codex_builtin",
-      "capability_tags": ["orchestration", "file_generation", "validation"]
     }
   ]
 }

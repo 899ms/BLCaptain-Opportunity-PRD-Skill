@@ -11,8 +11,9 @@ description: |
 ## 运行原则
 
 - 始终中文优先输出，除非用户明确要求英文。
-- 始终先确认模型能力池状态：无模型时只输出三步配置引导；一个模型时标注单模型低置信度；两个及以上模型时动态分工。
+- 始终先确认模型能力池状态：无可用外部模型时只输出配置引导；一个外部模型时标注单模型低置信度；两个及以上外部模型时动态分工。
 - 始终由 Codex 主持：Codex 负责拆任务、分配模型视角、处理冲突、写文件、跑校验和交接实现。
+- Codex 主持能力不等于外部模型能力；`codex_builtin` 只用于说明主持可用，不计入外部模型通过数。
 - 不硬编码任何固定模型职责；根据用户实际配置和能力标签分配任务。
 - 不固定社区平台；根据用户、场景、行业、竞品和问题类型动态选择平台。
 - 不把趋势、公告、观点文章、营销软文当作已验证需求。
@@ -23,7 +24,7 @@ description: |
 ## 快速流程
 
 1. 读取模型配置状态。需要配置时，使用 `references/model-config-guide.md`；需要真实健康检查时运行 `scripts/check_model_pool.py`，规则见 `references/model-health-check.md`。
-2. 根据可用模型生成动态角色表。使用 `references/model-assignment.md`。
+2. 根据可用外部模型生成动态角色表。使用 `references/model-assignment.md`。
 3. 把用户输入拆成意图卡：目标用户、场景、核心动作、替代方案、商业假设、未知项。
 4. 做平台路由和关键词计划。使用 `references/platform-routing.md` 和 `references/community-platform-catalog.md`；需要扫描公开 URL、本地样本或目录时运行 `scripts/scan_community_evidence.py`，规则见 `references/community-evidence-scan.md`。
 5. 建立证据墙和反向证据墙。使用 `references/evidence-rules.md`；需要扫描反向证据时运行 `scripts/scan_reverse_evidence.py`。
@@ -84,6 +85,12 @@ python3 scripts/quick_validate.py
 python3 scripts/check_model_pool.py --config templates/model-pool.example.json
 ```
 
+新用户模型配置示例：
+
+```bash
+python3 scripts/check_model_pool.py --config templates/model-pool.providers.example.json
+```
+
 社区证据扫描：
 
 ```bash
@@ -122,7 +129,7 @@ python3 scripts/validate_opportunity_prd.py path/to/report.md
 
 ## 停止线
 
-- 无可用模型：只输出配置引导。
+- 无可用外部模型：只输出配置引导；Codex 只主持低置信度初筛，不声称完成多模型讨论。
 - 有效证据少于 3 条：输出证据不足报告。
 - 没有商业信号：输出 Watch，不生成商业化机会 + 工程实施 PRD。
 - 反向证据无法回应：输出 Pivot 或 No-Go。

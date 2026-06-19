@@ -52,14 +52,14 @@ def simulate_no_model(errors: list[str]) -> str:
 | 字段 | 内容 |
 |---|---|
 | 配置状态 | config_required |
-| 已配置模型数 | 0 |
-| 健康检查通过数 | 0 |
-| Codex 主持状态 | 需配置模型 |
+| 已配置外部模型数 | 0 |
+| 外部模型通过数 | 0 |
+| Codex 主持状态 | 可主持（不计入外部模型） |
 
 ## 三步配置引导
 
-1. 添加模型：填写 Model A、Model B 或本地模型名称。
-2. 填调用方式：环境变量、OpenAI-compatible URL、CLI 命令或内置能力。
+1. 添加模型：填写 DeepSeek、GLM、Claude、Gemini、Grok 或本地模型名称。
+2. 填调用方式：OpenAI-compatible URL、CLI 命令或暂不确定。
 3. 测试并选择用途：长文本、商业反方、结构化、外部趋势、代码实现或通用。
 
 当前不进入机会分析，不生成平台路由、证据墙或商业化机会 PRD。
@@ -120,6 +120,30 @@ def simulate_model_health(errors: list[str]) -> str:
         errors,
     )
     assert_contains(output, ["low_confidence", "Mock CLI Model", "ok"], "模型健康检查", errors)
+    return output
+
+
+def simulate_codex_only_model_pool(errors: list[str]) -> str:
+    output_path = RUN_DIR / "model-health-codex-only.md"
+    output = run_command(
+        [
+            "python3",
+            "scripts/check_model_pool.py",
+            "--config",
+            "tests/fixtures/model-pool-codex-only.json",
+            "--output",
+            str(output_path),
+        ],
+        ROOT,
+        "Codex 主持不计入外部模型",
+        errors,
+    )
+    assert_contains(
+        output,
+        ["置信模式：config_required", "Codex Host", "host_available", "外部模型通过数：0"],
+        "Codex 主持不计入外部模型",
+        errors,
+    )
     return output
 
 
@@ -415,6 +439,7 @@ def build_report(errors: list[str], sections: list[tuple[str, str]]) -> str:
         "- No-Go：趋势文章无评论原话时必须拦住。",
         "- Go：客服质检样例有证据、反证、商业信号后才生成商业化机会 PRD。",
         "- 模型健康检查：CLI mock 可通过，缺密钥 OpenAI-compatible 不伪装成功。",
+        "- Codex 主持检查：codex_builtin 只说明主持可用，不计入外部模型。",
         "- 社区证据扫描：本地社区样本能抽取 evidence_id、用户原话、行为信号和商业信号。",
         "- 批量扫描和结构化导出：目录样本能输出 Markdown、JSON、CSV。",
         "- 反向证据扫描：能输出 reverse_id，并在高风险反证出现时阻止直接 Go。",
@@ -442,13 +467,14 @@ def main() -> int:
         ("场景 3：No-Go 证据不足", validate_report_fixture("tests/fixtures/nogo-trend-only.md", "No-Go", errors)),
         ("场景 4：Go 后生成商业化机会 PRD", validate_report_fixture("tests/fixtures/go-customer-service.md", "Go", errors)),
         ("场景 5：模型健康检查", simulate_model_health(errors)),
-        ("场景 6：缺密钥模型不伪装成功", simulate_missing_secret(errors)),
-        ("场景 7：社区证据扫描", simulate_community_scan(errors)),
-        ("场景 8：批量社区扫描和结构化导出", simulate_batch_exports(errors)),
-        ("场景 9：反向证据扫描", simulate_reverse_scan(errors)),
-        ("场景 10：P3 端到端 Go 工作流", simulate_full_workflow_go(errors)),
-        ("场景 11：P3 端到端 Pivot 工作流", simulate_full_workflow_pivot(errors)),
-        ("场景 12：P4 真实 URL 准备和工作流", simulate_real_run_prepare(errors)),
+        ("场景 6：Codex 主持不计入外部模型", simulate_codex_only_model_pool(errors)),
+        ("场景 7：缺密钥模型不伪装成功", simulate_missing_secret(errors)),
+        ("场景 8：社区证据扫描", simulate_community_scan(errors)),
+        ("场景 9：批量社区扫描和结构化导出", simulate_batch_exports(errors)),
+        ("场景 10：反向证据扫描", simulate_reverse_scan(errors)),
+        ("场景 11：P3 端到端 Go 工作流", simulate_full_workflow_go(errors)),
+        ("场景 12：P3 端到端 Pivot 工作流", simulate_full_workflow_pivot(errors)),
+        ("场景 13：P4 真实 URL 准备和工作流", simulate_real_run_prepare(errors)),
     ]
 
     RUN_DIR.mkdir(parents=True, exist_ok=True)

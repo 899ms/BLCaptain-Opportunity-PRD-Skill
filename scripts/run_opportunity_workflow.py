@@ -66,7 +66,7 @@ def model_health(config_path: Path, timeout: int) -> tuple[list[dict[str, Any]],
 
 
 def available_models(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    return [item for item in results if item["health"] in {"ok", "manual"}]
+    return [item for item in results if item["method"] != check_model_pool.HOST_METHOD and item["health"] == "ok"]
 
 
 def score_role(model: dict[str, Any], role: str) -> int:
@@ -188,8 +188,6 @@ def run_discussion(
                 content = invoke_cli_model(model, prompt, timeout)
             elif assignment["method"] == "openai_compatible":
                 content = invoke_openai_compatible(model, prompt, timeout)
-            elif assignment["method"] == "codex_builtin":
-                content = "Codex 主持在当前运行时完成整合，不由脚本重复调用。"
             else:
                 content = "未调用：该调用方式暂不支持自动讨论。"
         traces.append({**assignment, "prompt": prompt, "content": content})
@@ -209,7 +207,7 @@ def to_model_discussion_markdown(mode: str, assignments: list[dict[str, str]], t
         "|---|---|---|---|---|---|",
     ]
     if not assignments:
-        lines.append("| 无 | 无 | config_required | 无 | 配置引导 | 无可用模型 |")
+        lines.append("| 无 | 无 | config_required | 无 | 配置引导 | 无可用外部模型 |")
     for item in assignments:
         lines.append(
             f"| {item['display_name']} | {item['method']} | {item['health']} | {item['capability_tags']} | {item['role']} | {item['basis']} |"

@@ -92,13 +92,82 @@ BLCaptain Opportunity PRD Skill 解决的是这个问题：先从社区评论、
 
 用户可以配置自己已有的模型或本地命令行模型。Skill 会先做健康检查，再根据可用能力动态分工。
 
-如果只有一个模型，会进入低置信度模式；如果有多个模型，会分配主分析、反方审查、结构化分析、外部视角或工程实现视角。角色根据实际配置动态调整，不绑定固定模型名称。
+Codex 始终负责主持、整合、生成文件和校验，但 Codex 主持能力不计入外部模型。只有检测到真实可调用的外部模型后，才进入机会分析；如果只有一个外部模型，会进入低置信度模式；如果有多个外部模型，会分配主分析、反方审查、结构化分析、外部视角或工程实现视角。角色根据实际配置动态调整，不绑定固定模型名称。
 
-配置原则：
+### 支持模型与多模型配置
+
+这个 Skill 不绑定固定供应商。只要能通过 OpenAI-compatible API 或本机 CLI 返回文本，就可以接入。
+
+| 模型 / 类型 | 推荐接入方式 | 常见用途 |
+|---|---|---|
+| DeepSeek | `openai_compatible` 或 `cli` | 商业反方、成本收益、结构化审查 |
+| GLM | `openai_compatible` 或 `cli` | 中文语境、长评论理解、方法论组织 |
+| Claude / Claude Code | `cli` 优先 | 长文本理解、反向压力测试、综合审查 |
+| Gemini | `openai_compatible` 或 `cli` | 外部趋势、多模态线索、通用分析 |
+| Grok | `openai_compatible` 或 `cli` | 社交视角、实时讨论、反向观点 |
+| 本地模型，例如 Ollama、本地脚本 | `cli` | 低成本初筛、代码或结构化辅助 |
+| 其他兼容模型 | `openai_compatible` 或 `cli` | 按能力标签动态分配 |
+
+配置文件有两个：
+
+- `templates/model-pool.example.json`：默认空模型池，新用户从这里开始，不含 mock。
+- `templates/model-pool.providers.example.json`：可复制的模型接入示例，覆盖 DeepSeek、GLM、Claude CLI、Gemini、Grok、本地模型。
+
+最小操作流程：
+
+1. 复制一份模型配置文件到本地，例如 `my-model-pool.json`。
+2. 从 `templates/model-pool.providers.example.json` 复制你需要的模型条目。
+3. 只填写 `base_url`、`model`、`api_key_env` 或 `command`。
+4. 把真实密钥放到系统环境变量、macOS Keychain、1Password、Bitwarden、dotenv 本地私有文件或模型 CLI 自己的登录态中。
+5. 运行健康检查，确认至少 1 个外部模型可用。
+
+OpenAI-compatible 示例：
+
+```json
+{
+  "id": "deepseek-main",
+  "display_name": "DeepSeek",
+  "method": "openai_compatible",
+  "base_url": "填写官方 OpenAI-compatible Base URL",
+  "model": "填写模型名",
+  "api_key_env": "DEEPSEEK_API_KEY",
+  "capability_tags": ["general", "structure", "commercial_reverse"],
+  "test_prompt": "ping"
+}
+```
+
+CLI 示例：
+
+```json
+{
+  "id": "claude-cli",
+  "display_name": "Claude CLI",
+  "method": "cli",
+  "command": "填写你的本机非交互命令",
+  "capability_tags": ["long_context", "commercial_reverse", "general"],
+  "test_prompt": "ping"
+}
+```
+
+健康检查：
+
+```bash
+python3 scripts/check_model_pool.py --config my-model-pool.json
+```
+
+检查结果含义：
+
+- `config_required`：没有可用外部模型，只输出配置引导，不声称完成多模型讨论。
+- `low_confidence`：1 个外部模型可用，可以做低置信度初筛。
+- `standard`：2 到 3 个外部模型可用，可以做主分析、反方和结构化审查。
+- `heavy_discussion`：4 个及以上外部模型可用，可以做多视角讨论。
+
+安全原则：
 
 - 配置文件只保存模型名称、调用方式和环境变量名。
-- 不把任何真实凭据写进仓库。
-- 缺少凭据时只提示配置缺失，不伪装成功。
+- 不把任何真实 API Key、token、cookie、账号信息写进仓库。
+- Codex 是主持者，不需要写进外部模型池，也不计入外部模型通过数。
+- 缺少配置或凭据时只提示 `missing_config` / `missing_secret`，不伪装成功。
 
 ### 2. 动态社区路由
 
@@ -287,6 +356,13 @@ python3 scripts/simulate_user_flow.py
 ```bash
 python3 scripts/check_model_pool.py \
   --config templates/model-pool.example.json
+```
+
+查看 DeepSeek、GLM、Claude CLI、Gemini、Grok、本地模型配置示例：
+
+```bash
+python3 scripts/check_model_pool.py \
+  --config templates/model-pool.providers.example.json
 ```
 
 扫描社区证据：

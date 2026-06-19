@@ -1,0 +1,68 @@
+{
+  "version": "1.0",
+  "description": "多模型能力池示例。复制你需要的条目到自己的模型配置文件中，并只填写环境变量名或本机 CLI 命令，不要保存真实密钥。",
+  "security_notes": [
+    "OpenAI-compatible 只保存 api_key_env，不保存真实 API Key。",
+    "真实密钥建议放在系统环境变量、macOS Keychain、1Password、Bitwarden、dotenv 本地私有文件或对应模型 CLI 的登录态中。",
+    "CLI 模型命令由用户本机环境负责鉴权；仓库不保存 token、cookie 或账号信息。",
+    "Codex 是主持和文件生成者，不需要写进外部模型池，也不计入外部模型通过数。"
+  ],
+  "models": [
+    {
+      "id": "deepseek-main",
+      "display_name": "DeepSeek",
+      "method": "openai_compatible",
+      "base_url": "填写 DeepSeek 官方 OpenAI-compatible Base URL",
+      "model": "填写 DeepSeek 模型名",
+      "api_key_env": "DEEPSEEK_API_KEY",
+      "capability_tags": ["general", "structure", "commercial_reverse"],
+      "test_prompt": "ping"
+    },
+    {
+      "id": "glm-main",
+      "display_name": "GLM",
+      "method": "openai_compatible",
+      "base_url": "填写 GLM 官方 OpenAI-compatible Base URL",
+      "model": "填写 GLM 模型名",
+      "api_key_env": "GLM_API_KEY",
+      "capability_tags": ["long_context", "structure", "chinese_context"],
+      "test_prompt": "ping"
+    },
+    {
+      "id": "gemini-main",
+      "display_name": "Gemini",
+      "method": "openai_compatible",
+      "base_url": "填写 Gemini OpenAI-compatible Base URL 或你的代理网关 URL",
+      "model": "填写 Gemini 模型名",
+      "api_key_env": "GEMINI_API_KEY",
+      "capability_tags": ["external_trend", "general", "multimodal"],
+      "test_prompt": "ping"
+    },
+    {
+      "id": "grok-main",
+      "display_name": "Grok",
+      "method": "openai_compatible",
+      "base_url": "填写 Grok OpenAI-compatible Base URL 或你的代理网关 URL",
+      "model": "填写 Grok 模型名",
+      "api_key_env": "GROK_API_KEY",
+      "capability_tags": ["social", "external_trend", "commercial_reverse"],
+      "test_prompt": "ping"
+    },
+    {
+      "id": "claude-cli",
+      "display_name": "Claude CLI",
+      "method": "cli",
+      "command": "填写你的本机 Claude 非交互命令，例如 claude -p 或其他可返回文本的命令",
+      "capability_tags": ["long_context", "commercial_reverse", "general"],
+      "test_prompt": "ping"
+    },
+    {
+      "id": "local-cli-model",
+      "display_name": "Local CLI Model",
+      "method": "cli",
+      "command": "填写你的本地模型命令，例如 ollama run model-name",
+      "capability_tags": ["general", "code", "cost_sensitive"],
+      "test_prompt": "ping"
+    }
+  ]
+}

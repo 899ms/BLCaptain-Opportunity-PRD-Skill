@@ -36,11 +36,86 @@ It is not an idea generator. It is an evidence and business validation workflow.
 
 Users configure their own available models or local model commands. The Skill checks model health first, then assigns roles dynamically.
 
-- No usable model: output only a short configuration guide.
-- One usable model: run in low-confidence single-model mode.
-- Multiple usable models: assign analysis, reverse review, structure, external view, or implementation roles based on actual capability tags.
+- No usable external model: output only a configuration guide.
+- One usable external model: run in low-confidence single-model mode.
+- Multiple usable external models: assign analysis, reverse review, structure, external view, or implementation roles based on actual capability tags.
 
-The workflow is always hosted by Codex or the current coding agent. The Skill does not hard-code fixed duties for any specific model brand.
+The workflow is always hosted by Codex or the current coding agent. Codex is the host, final synthesizer, file writer, and validator, but it does not count as an external model. The Skill does not hard-code fixed duties for any specific model brand.
+
+## Supported Models and Configuration
+
+This Skill is provider-neutral. Any model that can return text through an OpenAI-compatible API or a local CLI command can be connected.
+
+| Model / Type | Recommended Method | Typical Role |
+|---|---|---|
+| DeepSeek | `openai_compatible` or `cli` | commercial opposition, cost-benefit review, structured critique |
+| GLM | `openai_compatible` or `cli` | Chinese context, long comments, methodology structure |
+| Claude / Claude Code | `cli` first | long-context reading, reverse stress test, synthesis review |
+| Gemini | `openai_compatible` or `cli` | external trends, multimodal clues, general analysis |
+| Grok | `openai_compatible` or `cli` | social perspective, live discussion, contrary signals |
+| Local models, such as Ollama or local scripts | `cli` | low-cost triage, code or structure assistance |
+| Other compatible models | `openai_compatible` or `cli` | dynamically assigned by capability tags |
+
+Configuration files:
+
+- `templates/model-pool.example.json`: empty default model pool for new users; no mock model is included.
+- `templates/model-pool.providers.example.json`: copyable examples for DeepSeek, GLM, Claude CLI, Gemini, Grok, and local models.
+
+Minimal setup:
+
+1. Create a local model config, for example `my-model-pool.json`.
+2. Copy the model entries you need from `templates/model-pool.providers.example.json`.
+3. Fill only `base_url`, `model`, `api_key_env`, or `command`.
+4. Store real secrets in environment variables, macOS Keychain, 1Password, Bitwarden, a private local dotenv file, or the model CLI login state.
+5. Run the health check and confirm at least one external model is usable.
+
+OpenAI-compatible example:
+
+```json
+{
+  "id": "deepseek-main",
+  "display_name": "DeepSeek",
+  "method": "openai_compatible",
+  "base_url": "fill the official OpenAI-compatible Base URL",
+  "model": "fill the model name",
+  "api_key_env": "DEEPSEEK_API_KEY",
+  "capability_tags": ["general", "structure", "commercial_reverse"],
+  "test_prompt": "ping"
+}
+```
+
+CLI example:
+
+```json
+{
+  "id": "claude-cli",
+  "display_name": "Claude CLI",
+  "method": "cli",
+  "command": "fill your local non-interactive command",
+  "capability_tags": ["long_context", "commercial_reverse", "general"],
+  "test_prompt": "ping"
+}
+```
+
+Health check:
+
+```bash
+python3 scripts/check_model_pool.py --config my-model-pool.json
+```
+
+Status meanings:
+
+- `config_required`: no usable external model; output configuration guidance only.
+- `low_confidence`: one external model is usable; low-confidence triage is allowed.
+- `standard`: two to three external models are usable; analysis, opposition, and structure review can be assigned.
+- `heavy_discussion`: four or more external models are usable; multi-perspective discussion can run.
+
+Security rules:
+
+- Keep only model names, call methods, and environment variable names in config files.
+- Never commit real API keys, tokens, cookies, or account data.
+- Codex is the host and should not be added to the external model pool.
+- Missing settings or secrets are reported as `missing_config` / `missing_secret`; the Skill does not pretend they work.
 
 ## Community Evidence
 

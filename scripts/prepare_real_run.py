@@ -213,13 +213,15 @@ def model_health(model_config: Path, timeout: int) -> tuple[list[dict[str, Any]]
 
 def audit_markdown(case: dict[str, Any], audit_items: list[dict[str, Any]], model_results: list[dict[str, Any]]) -> str:
     ok_sources = len([item for item in audit_items if item["status"] == "ok"])
-    ok_models = len([item for item in model_results if item["health"] in {"ok", "manual"}])
+    ok_models = check_model_pool.external_ok_count(model_results)
+    external_models = check_model_pool.configured_external_count(model_results)
     lines = [
         "# 真实运行准备报告",
         "",
         f"- 想法：{case.get('idea', '未填写')}",
         f"- 可用来源数：{ok_sources}/{len(audit_items)}",
-        f"- 可用模型数：{ok_models}/{len(model_results)}",
+        f"- 外部模型通过数：{ok_models}/{external_models}",
+        f"- Codex 主持状态：{check_model_pool.codex_host_status(model_results)}",
         "",
         "## 来源审计",
         "",
