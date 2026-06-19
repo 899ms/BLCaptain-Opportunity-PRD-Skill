@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.2.4
+
+### Changed
+
+- Unified the public GitHub repository name, install commands, README links, and Skill frontmatter name around `BLCaptain Opportunity PRD Skill`.
+- Removed the old repository slug from public documentation.
+
 ## v1.2.3
 
 ### Added

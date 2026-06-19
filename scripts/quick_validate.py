@@ -90,8 +90,8 @@ def validate_skill_frontmatter(errors: list[str]) -> None:
         return
 
     frontmatter = match.group(1)
-    if "name: opportunity-to-commercial-prd" not in frontmatter:
-        errors.append("SKILL.md frontmatter name 必须是 opportunity-to-commercial-prd")
+    if "name: BLCaptain Opportunity PRD Skill" not in frontmatter:
+        errors.append("SKILL.md frontmatter name 必须是 BLCaptain Opportunity PRD Skill")
     if "description:" not in frontmatter:
         errors.append("SKILL.md frontmatter 缺少 description")
     if len(frontmatter) > 1400:

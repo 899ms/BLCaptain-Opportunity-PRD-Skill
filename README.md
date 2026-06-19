@@ -10,7 +10,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 > **安装**：对支持 Skill 的 Agent 说：  
-> 「帮我安装 **BLCaptain Opportunity PRD Skill**：仓库 `github.com/dososo/blcaptain-digg-prd`」
+> 「帮我安装 **BLCaptain Opportunity PRD Skill**：仓库 `github.com/dososo/BLCaptain-Opportunity-PRD-Skill`」
 
 ---
 
@@ -163,13 +163,13 @@ BLCaptain Opportunity PRD Skill 解决的是这个问题：先从社区评论、
 
 ```bash
 # 通用方式
-npx skills add dososo/blcaptain-digg-prd -g
+npx skills add dososo/BLCaptain-Opportunity-PRD-Skill -g
 
-# 或手动安装。下面的 blcaptain-digg-prd 是 GitHub 仓库目录名，不是 Skill 名称。
-git clone https://github.com/dososo/blcaptain-digg-prd.git
+# 或手动安装
+git clone https://github.com/dososo/BLCaptain-Opportunity-PRD-Skill.git
 
 # 复制到你的 Agent skills 目录
-cp -R blcaptain-digg-prd ~/.codex/skills/BLCaptain-Opportunity-PRD-Skill
+cp -R BLCaptain-Opportunity-PRD-Skill ~/.codex/skills/BLCaptain-Opportunity-PRD-Skill
 ```
 
 环境要求：

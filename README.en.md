@@ -76,19 +76,19 @@ Research is the underlying action throughout the process. If evidence is insuffi
 Ask a Skill-capable agent:
 
 ```text
-Install BLCaptain Opportunity PRD Skill from github.com/dososo/blcaptain-digg-prd.
+Install BLCaptain Opportunity PRD Skill from github.com/dososo/BLCaptain-Opportunity-PRD-Skill.
 ```
 
 Or install manually:
 
 ```bash
-npx skills add dososo/blcaptain-digg-prd -g
+npx skills add dososo/BLCaptain-Opportunity-PRD-Skill -g
 
-git clone https://github.com/dososo/blcaptain-digg-prd.git
-cp -R blcaptain-digg-prd ~/.codex/skills/BLCaptain-Opportunity-PRD-Skill
+git clone https://github.com/dososo/BLCaptain-Opportunity-PRD-Skill.git
+cp -R BLCaptain-Opportunity-PRD-Skill ~/.codex/skills/BLCaptain-Opportunity-PRD-Skill
 ```
 
-The repository slug `blcaptain-digg-prd` is only the GitHub folder name. The Skill name is **BLCaptain Opportunity PRD Skill**.
+The repository name and Skill name are both aligned around **BLCaptain Opportunity PRD Skill**.
 
 Requirements:
 
