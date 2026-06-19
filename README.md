@@ -14,6 +14,25 @@
 
 ---
 
+## 工作截图
+
+<table>
+  <tr>
+    <td width="50%">
+      <img src="assets/screenshots/workflow-evidence-gate.png" alt="BLCaptain Opportunity PRD Skill 证据扫描、多模型讨论与 Gate 决策截图">
+    </td>
+    <td width="50%">
+      <img src="assets/screenshots/prd-output-implementation.png" alt="BLCaptain Opportunity PRD Skill 商业化机会与工程实施 PRD 截图">
+    </td>
+  </tr>
+  <tr>
+    <td align="center"><strong>先找真实证据，再做多模型讨论与 Gate 决策</strong></td>
+    <td align="center"><strong>通过 Go 后，生成可交付开发的商业化 PRD</strong></td>
+  </tr>
+</table>
+
+---
+
 ## 为什么要做它
 
 AI 很擅长把一句想法写成一份“看起来完整”的 PRD，但这类文档经常有三个硬伤：
