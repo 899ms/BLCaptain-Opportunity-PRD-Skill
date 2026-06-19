@@ -18,6 +18,8 @@ python3 scripts/run_opportunity_workflow.py \
 
 ## 默认安全策略
 
+- 工作流第一步必须是模型池 Bootstrap，并生成 `model-health.md/json`。
+- `config_required` 时立即停止，只输出模型配置引导和 `workflow-summary`，不进入社区扫描、反向扫描、讨论、Gate 或 PRD。
 - 默认不调用真实付费模型，只生成动态分工和讨论任务。
 - 只有显式传入 `--run-discussion` 时，才调用健康检查通过的 CLI 或 OpenAI-compatible 模型。
 - `codex_builtin` 不由脚本重复调用，也不计入外部模型通过数；Codex 始终负责主持、综合、文件生成和校验。
@@ -32,14 +34,17 @@ python3 scripts/run_opportunity_workflow.py \
 | `evidence-report.md/json/csv` | 正向社区证据墙 |
 | `reverse-evidence-report.md/json/csv` | 反向证据墙 |
 | `opportunity-assessment.md` | 机会评估报告 |
+| `pivot-to-go-assessment.md` | 原切口 Pivot 时的新切口和二次 Gate |
 | `commercial-opportunity-prd.md` | 仅 Go 时生成 |
 | `workflow-summary.md/json` | 本轮结果摘要 |
 
 ## 决策规则
 
-- `config_required`、意图严重缺失或有效证据少于 3 条：No-Go。
+- `config_required`：ConfigRequired，立即停止，只输出配置引导。
+- 意图严重缺失或有效证据少于 3 条：No-Go。
 - 证据不足、可信度低或商业信号为 0：Watch。
-- 正向证据成立但存在高风险反证：Pivot。
+- 正向证据成立但存在高风险反证：Pivot，必须尝试重新定义更小切口。
+- Pivot-to-Go：如果反证可通过合规、成本、配置、ICP 或交付边界回应，则用同一批 evidence_id 和 reverse_id 重新跑 Gate。
 - G0 到 G7 通过且 G8 可交接：Go，并生成商业化机会 PRD。
 
 ## 验收

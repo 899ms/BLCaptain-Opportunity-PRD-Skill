@@ -11,13 +11,14 @@ description: |
 ## 运行原则
 
 - 始终中文优先输出，除非用户明确要求英文。
-- 始终先确认模型能力池状态：无可用外部模型时只输出配置引导；一个外部模型时标注单模型低置信度；两个及以上外部模型时动态分工。
+- 始终先确认 skill 自己的模型能力池状态：无可用外部模型时只输出配置引导并停止机会分析；一个外部模型时标注单模型低置信度；两个及以上外部模型时动态分工。
 - 始终由 Codex 主持：Codex 负责拆任务、分配模型视角、处理冲突、写文件、跑校验和交接实现。
 - Codex 主持能力不等于外部模型能力；`codex_builtin` 只用于说明主持可用，不计入外部模型通过数。
 - 当用户说“接入某个模型”“我有某个 API Key”“我有某个 CLI 命令”时，优先用引导式配置：询问最少必要信息，帮用户生成或更新本地模型配置文件，提醒密钥不要写入 JSON，然后运行健康检查；不要默认要求用户手动编辑配置文件。
 - 不硬编码任何固定模型职责；根据用户实际配置和能力标签分配任务。
 - 不固定社区平台；根据用户、场景、行业、竞品和问题类型动态选择平台。
 - 不把趋势、公告、观点文章、营销软文当作已验证需求。
+- 不把其他 MCP、外部注册表或本机历史配置绕过模型池；所有参与讨论的外部模型必须先写入模型池并通过健康检查。
 - 没有用户原话、URL、日期、手动行为、商业信号和反向证据时，不生成“已验证需求”型 PRD。
 - 默认终点是机会评估报告；只有判断为 Go 时才生成商业化机会 + 工程实施 PRD。
 - Go 后最终 PRD 必须能指导研发实施，包含系统架构、数据流、技术选型、字段字典、API 契约、安全隐私、异常流程、测试、部署运维、埋点和开发任务 DoD。
@@ -32,10 +33,11 @@ description: |
 6. 建立证据墙和反向证据墙。使用 `references/evidence-rules.md`；需要扫描反向证据时运行 `scripts/scan_reverse_evidence.py`。
 7. 选择最小方法论组合。使用 `references/methodology-router.md`。
 8. 按 G0 到 G8 运行 Gate。使用 `references/workflow-gates.md`。
-9. 输出机会评估报告；只有 Go 时继续输出商业化机会 + 工程实施 PRD。使用 `references/commercial-prd-contract.md`。
-10. 需要真实 URL、用户导出样本或真实模型配置演练时，运行 `scripts/prepare_real_run.py`，规则见 `references/real-run-playbook.md`。
-11. 需要端到端执行时，运行 `scripts/run_opportunity_workflow.py`，规则见 `references/workflow-orchestration.md`。
-12. 生成或检查文件时，运行 `scripts/quick_validate.py` 或 `scripts/validate_opportunity_prd.py`。
+9. 如果原切口是 Pivot，先重定义新切口并执行 Pivot-to-Go 二次 Gate；新切口 Go 后才进入 PRD。
+10. 输出机会评估报告；只有最终 Go 时继续输出商业化机会 + 工程实施 PRD。使用 `references/commercial-prd-contract.md`。
+11. 需要真实 URL、用户导出样本或真实模型配置演练时，运行 `scripts/prepare_real_run.py`，规则见 `references/real-run-playbook.md`。
+12. 需要端到端执行时，运行 `scripts/run_opportunity_workflow.py`，规则见 `references/workflow-orchestration.md`。
+13. 生成或检查文件时，运行 `scripts/quick_validate.py` 或 `scripts/validate_opportunity_prd.py`。
 
 ## 八步工作法
 
@@ -134,5 +136,5 @@ python3 scripts/validate_opportunity_prd.py path/to/report.md
 - 无可用外部模型：只输出配置引导；Codex 只主持低置信度初筛，不声称完成多模型讨论。
 - 有效证据少于 3 条：输出证据不足报告。
 - 没有商业信号：输出 Watch，不生成商业化机会 + 工程实施 PRD。
-- 反向证据无法回应：输出 Pivot 或 No-Go。
+- 反向证据无法回应：输出 Pivot 或 No-Go；若反证可被新切口回应，先跑 Pivot-to-Go，再决定是否生成 PRD。
 - 任一 P0 功能没有 evidence_id：修复 PRD 或删除该功能。

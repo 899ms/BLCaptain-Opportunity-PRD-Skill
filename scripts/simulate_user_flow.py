@@ -106,6 +106,7 @@ def run_command(command: list[str], cwd: Path, label: str, errors: list[str]) ->
 
 def simulate_model_health(errors: list[str]) -> str:
     output_path = RUN_DIR / "model-health-cli.md"
+    json_output_path = RUN_DIR / "model-health-cli.json"
     output = run_command(
         [
             "python3",
@@ -114,12 +115,20 @@ def simulate_model_health(errors: list[str]) -> str:
             "tests/fixtures/model-pool-cli.json",
             "--output",
             str(output_path),
+            "--json-output",
+            str(json_output_path),
         ],
         ROOT,
         "模型健康检查",
         errors,
     )
-    assert_contains(output, ["low_confidence", "Mock CLI Model", "ok"], "模型健康检查", errors)
+    assert_contains(output, ["low_confidence", "Mock CLI Model", "ok", "可接入候选"], "模型健康检查", errors)
+    if not json_output_path.exists():
+        errors.append("模型健康检查未生成 JSON 输出")
+    else:
+        payload = json.loads(json_output_path.read_text(encoding="utf-8"))
+        if payload.get("external_ok_count") != 1 or "cli_candidates" not in payload:
+            errors.append("模型健康检查 JSON 缺少 external_ok_count 或 cli_candidates")
     return output
 
 
@@ -164,6 +173,44 @@ def simulate_missing_secret(errors: list[str]) -> str:
     )
     assert_contains(output, ["config_required", "missing_secret", "OPPORTUNITY_PRD_MISSING_KEY"], "缺密钥模型健康检查", errors)
     assert_not_contains(output, ["sk-", "Bearer "], "缺密钥模型健康检查", errors)
+    return output
+
+
+def simulate_config_required_workflow(errors: list[str]) -> str:
+    output_dir = RUN_DIR / "opportunity-workflow-config-required-new-user"
+    output = run_command(
+        [
+            "python3",
+            "scripts/run_opportunity_workflow.py",
+            "--idea",
+            "AI 客服质检工具",
+            "--model-config",
+            "templates/model-pool.example.json",
+            "--sources",
+            "tests/fixtures/community-batch-sources-local.json",
+            "--reverse-sources",
+            "tests/fixtures/reverse-sources-local.json",
+            "--output-dir",
+            str(output_dir),
+        ],
+        ROOT,
+        "新用户空模型池工作流",
+        errors,
+    )
+    assert_contains(output, ["工作流停止：ConfigRequired", "opportunity-workflow-config-required-new-user"], "新用户空模型池工作流", errors)
+    summary_path = output_dir / "workflow-summary.json"
+    health_path = output_dir / "model-health.json"
+    for path in [summary_path, health_path]:
+        if not path.exists():
+            errors.append(f"新用户空模型池工作流缺少输出文件：{path}")
+    if summary_path.exists():
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        if summary.get("decision") != "ConfigRequired" or not summary.get("bootstrap_only"):
+            errors.append("新用户空模型池工作流没有停在 Bootstrap")
+    forbidden_outputs = ["evidence-report.md", "reverse-evidence-report.md", "model-discussion.md", "commercial-opportunity-prd.md"]
+    for name in forbidden_outputs:
+        if (output_dir / name).exists():
+            errors.append(f"新用户空模型池工作流不应生成：{name}")
     return output
 
 
@@ -321,17 +368,22 @@ def simulate_full_workflow_pivot(errors: list[str]) -> str:
             str(output_dir),
         ],
         ROOT,
-        "P3 端到端 Pivot 工作流",
+        "P3 端到端 Pivot-to-Go 工作流",
         errors,
     )
-    assert_contains(output, ["工作流完成：Pivot", "opportunity-workflow-pivot"], "P3 端到端 Pivot 工作流", errors)
+    assert_contains(output, ["工作流完成：Go", "opportunity-workflow-pivot"], "P3 端到端 Pivot-to-Go 工作流", errors)
     summary_path = output_dir / "workflow-summary.json"
+    prd_path = output_dir / "commercial-opportunity-prd.md"
+    pivot_path = output_dir / "pivot-to-go-assessment.md"
     if summary_path.exists():
         summary = json.loads(summary_path.read_text(encoding="utf-8"))
-        if summary.get("decision") != "Pivot" or summary.get("prd_generated"):
-            errors.append("P3 端到端 Pivot 工作流不应生成 PRD")
+        if summary.get("initial_decision") != "Pivot" or summary.get("decision") != "Go" or not summary.get("pivot_loop"):
+            errors.append("P3 端到端 Pivot-to-Go 工作流没有完成二次切口")
     else:
-        errors.append(f"P3 端到端 Pivot 工作流缺少输出文件：{summary_path}")
+        errors.append(f"P3 端到端 Pivot-to-Go 工作流缺少输出文件：{summary_path}")
+    for path in [prd_path, pivot_path]:
+        if not path.exists():
+            errors.append(f"P3 端到端 Pivot-to-Go 工作流缺少输出文件：{path}")
     return output
 
 
@@ -443,7 +495,8 @@ def build_report(errors: list[str], sections: list[tuple[str, str]]) -> str:
         "- 社区证据扫描：本地社区样本能抽取 evidence_id、用户原话、行为信号和商业信号。",
         "- 批量扫描和结构化导出：目录样本能输出 Markdown、JSON、CSV。",
         "- 反向证据扫描：能输出 reverse_id，并在高风险反证出现时阻止直接 Go。",
-        "- 端到端工作流：Go 样例生成并校验商业化 PRD，Pivot 样例只输出机会评估。",
+        "- 新用户空模型池工作流：停在模型池 Bootstrap，不进入机会分析。",
+        "- 端到端工作流：Go 样例生成并校验商业化 PRD，Pivot 样例会先重定义切口再尝试 Go。",
         "- 真实运行准备：公开 URL 能快照成本地 sources，并衔接 P3 工作流。",
         "",
     ]
@@ -469,12 +522,13 @@ def main() -> int:
         ("场景 5：模型健康检查", simulate_model_health(errors)),
         ("场景 6：Codex 主持不计入外部模型", simulate_codex_only_model_pool(errors)),
         ("场景 7：缺密钥模型不伪装成功", simulate_missing_secret(errors)),
-        ("场景 8：社区证据扫描", simulate_community_scan(errors)),
-        ("场景 9：批量社区扫描和结构化导出", simulate_batch_exports(errors)),
-        ("场景 10：反向证据扫描", simulate_reverse_scan(errors)),
-        ("场景 11：P3 端到端 Go 工作流", simulate_full_workflow_go(errors)),
-        ("场景 12：P3 端到端 Pivot 工作流", simulate_full_workflow_pivot(errors)),
-        ("场景 13：P4 真实 URL 准备和工作流", simulate_real_run_prepare(errors)),
+        ("场景 8：新用户空模型池工作流", simulate_config_required_workflow(errors)),
+        ("场景 9：社区证据扫描", simulate_community_scan(errors)),
+        ("场景 10：批量社区扫描和结构化导出", simulate_batch_exports(errors)),
+        ("场景 11：反向证据扫描", simulate_reverse_scan(errors)),
+        ("场景 12：P3 端到端 Go 工作流", simulate_full_workflow_go(errors)),
+        ("场景 13：P3 端到端 Pivot-to-Go 工作流", simulate_full_workflow_pivot(errors)),
+        ("场景 14：P4 真实 URL 准备和工作流", simulate_real_run_prepare(errors)),
     ]
 
     RUN_DIR.mkdir(parents=True, exist_ok=True)

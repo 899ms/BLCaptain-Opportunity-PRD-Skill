@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -18,6 +19,29 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CONFIG = ROOT / "templates" / "model-pool.example.json"
 HOST_METHOD = "codex_builtin"
+CLI_CANDIDATES = [
+    {
+        "display_name": "Claude CLI",
+        "command": "claude -p",
+        "capability_tags": ["long_context", "commercial_reverse", "general"],
+    },
+    {
+        "display_name": "Gemini CLI",
+        "command": "gemini -p",
+        "capability_tags": ["external_trend", "general", "multimodal"],
+    },
+    {
+        "display_name": "Ollama 本地模型",
+        "command": "ollama run <model>",
+        "capability_tags": ["general", "code", "cost_sensitive"],
+    },
+]
+OPENAI_COMPATIBLE_CANDIDATES = [
+    ("DeepSeek", "DEEPSEEK_API_KEY", "general, structure, commercial_reverse"),
+    ("GLM", "GLM_API_KEY", "long_context, structure, chinese_context"),
+    ("Gemini", "GEMINI_API_KEY", "external_trend, general, multimodal"),
+    ("Grok", "GROK_API_KEY", "social, external_trend, commercial_reverse"),
+]
 
 
 def display_path(path: Path) -> str:
@@ -173,6 +197,27 @@ def codex_host_status(results: list[dict[str, Any]]) -> str:
     return "可主持（当前 Codex 运行时，不计入外部模型）"
 
 
+def command_head(command: str) -> str:
+    return command.split()[0] if command.split() else command
+
+
+def discover_cli_candidates() -> list[dict[str, Any]]:
+    candidates = []
+    for item in CLI_CANDIDATES:
+        binary = command_head(item["command"])
+        path = shutil.which(binary)
+        candidates.append(
+            {
+                **item,
+                "binary": binary,
+                "available_on_path": bool(path),
+                "path": path or "",
+                "note": "可写入模型池后健康检查" if path else "未在 PATH 发现，仍可手动填写完整命令",
+            }
+        )
+    return candidates
+
+
 def config_required_guidance() -> list[str]:
     return [
         "",
@@ -217,6 +262,53 @@ def config_required_guidance() -> list[str]:
     ]
 
 
+def candidate_guidance_lines() -> list[str]:
+    lines = [
+        "",
+        "## 可接入候选",
+        "",
+        "以下只是候选发现和配置参考，不会计入外部模型通过数。只有写入模型池 JSON，并通过健康检查后，才会参与动态分工。",
+        "",
+        "### OpenAI-compatible 候选",
+        "",
+        "| 模型 | 建议环境变量名 | 常见用途 |",
+        "|---|---|---|",
+    ]
+    for name, env_name, tags in OPENAI_COMPATIBLE_CANDIDATES:
+        lines.append(f"| {name} | {env_name} | {tags} |")
+
+    lines.extend(
+        [
+            "",
+            "### 本机 CLI 候选",
+            "",
+            "| 候选 | 建议命令 | PATH 状态 | 能力标签 | 说明 |",
+            "|---|---|---|---|---|",
+        ]
+    )
+    for item in discover_cli_candidates():
+        status = "已发现" if item["available_on_path"] else "未发现"
+        tags = ", ".join(item["capability_tags"])
+        lines.append(f"| {item['display_name']} | `{item['command']}` | {status} | {tags} | {item['note']} |")
+    return lines
+
+
+def health_payload(config_path: Path, results: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "config_path": display_path(config_path),
+        "mode": decide_mode(results),
+        "configured_external_count": configured_external_count(results),
+        "external_ok_count": external_ok_count(results),
+        "codex_host_status": codex_host_status(results),
+        "models": results,
+        "cli_candidates": discover_cli_candidates(),
+        "openai_compatible_candidates": [
+            {"display_name": name, "api_key_env": env_name, "capability_tags": [tag.strip() for tag in tags.split(",")]}
+            for name, env_name, tags in OPENAI_COMPATIBLE_CANDIDATES
+        ],
+    }
+
+
 def to_markdown(config_path: Path, results: list[dict[str, Any]]) -> str:
     mode = decide_mode(results)
     external_ok = external_ok_count(results)
@@ -255,6 +347,8 @@ def to_markdown(config_path: Path, results: list[dict[str, Any]]) -> str:
     )
     if mode == "config_required":
         lines.extend(config_required_guidance())
+    if mode == "config_required" or external_ok < 3:
+        lines.extend(candidate_guidance_lines())
     return "\n".join(lines)
 
 
@@ -262,6 +356,7 @@ def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description="Check configured model pool.")
     parser.add_argument("--config", default=str(DEFAULT_CONFIG), help="Path to model pool JSON config.")
     parser.add_argument("--output", help="Optional Markdown report path.")
+    parser.add_argument("--json-output", help="Optional structured health report path.")
     parser.add_argument("--timeout", type=int, default=20, help="Per-model timeout seconds.")
     args = parser.parse_args(argv)
 
@@ -275,6 +370,13 @@ def main(argv: list[str]) -> int:
         output_path = Path(args.output)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(markdown, encoding="utf-8")
+    if args.json_output:
+        json_output_path = Path(args.json_output)
+        json_output_path.parent.mkdir(parents=True, exist_ok=True)
+        json_output_path.write_text(
+            json.dumps(health_payload(config_path, results), ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
     print(markdown)
 
     return 0

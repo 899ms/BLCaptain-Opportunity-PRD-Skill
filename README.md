@@ -7,7 +7,7 @@
 ![Python](https://img.shields.io/badge/Python-%3E%3D3.10-2b2622.svg)
 ![Agent Skill](https://img.shields.io/badge/Agent-Skill-d98e3a.svg)
 ![Evidence Based](https://img.shields.io/badge/PRD-Evidence--Based-2f5ea7.svg)
-[![Release](https://img.shields.io/github/v/release/dososo/BLCaptain-Opportunity-PRD-Skill?label=Release)](https://github.com/dososo/BLCaptain-Opportunity-PRD-Skill/releases/tag/v1.2.5)
+[![Release](https://img.shields.io/github/v/release/dososo/BLCaptain-Opportunity-PRD-Skill?label=Release)](https://github.com/dososo/BLCaptain-Opportunity-PRD-Skill/releases/tag/v1.2.6)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 > **安装**：对支持 Skill 的 Agent 说：  
@@ -136,6 +136,8 @@ Codex 应该帮你完成这些事：
 4. 告诉你如何把密钥放到环境变量、Keychain、1Password、Bitwarden、dotenv 本地私有文件或 CLI 登录态里。
 5. 运行健康检查，并解释当前是 `config_required`、`low_confidence`、`standard` 还是 `heavy_discussion`。
 
+健康检查还会提示可接入候选，例如 Claude CLI、Gemini CLI、Ollama、本地模型或常见 OpenAI-compatible 模型。候选只是帮你配置，不会被算作可用模型；只有写入模型池 JSON 并通过健康检查后，才会参与多模型讨论。
+
 如果你想自己手动配置，也可以用下面的方式：
 
 1. 复制一份模型配置文件到本地，例如 `my-model-pool.json`。
@@ -176,6 +178,7 @@ CLI 示例：
 
 ```bash
 python3 scripts/check_model_pool.py --config my-model-pool.json
+python3 scripts/check_model_pool.py --config my-model-pool.json --json-output model-health.json
 ```
 
 检查结果含义：

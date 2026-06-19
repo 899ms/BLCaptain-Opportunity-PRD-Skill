@@ -31,6 +31,15 @@ python3 scripts/check_model_pool.py \
   --output tests/runs/model-health-report.md
 ```
 
+也可输出结构化健康检查：
+
+```bash
+python3 scripts/check_model_pool.py \
+  --config templates/model-pool.example.json \
+  --output tests/runs/model-health-report.md \
+  --json-output tests/runs/model-health-report.json
+```
+
 ## 输出模式
 
 - `config_required`：无可用外部模型，只输出配置引导。
@@ -46,3 +55,16 @@ python3 scripts/check_model_pool.py \
 - 占位 base_url、model 或 command 输出 `missing_config`，引导用户补配置，不执行占位命令。
 - 缺少密钥时输出 `missing_secret`，不得伪装成功。
 - CLI 命令由用户本地环境负责权限和密钥管理。
+
+## 候选发现
+
+健康检查会展示两类可接入候选：
+
+- OpenAI-compatible：DeepSeek、GLM、Gemini、Grok 等，只提示建议环境变量名和用途标签。
+- 本机 CLI：Claude CLI、Gemini CLI、Ollama 本地模型等，只检查命令是否在 PATH 中。
+
+候选发现只用于引导用户配置，不会计入外部模型通过数。只有用户把模型写入自己的模型池 JSON，并通过健康检查后，才允许参与动态分工和 `--run-discussion`。
+
+## 工作流硬停止
+
+`run_opportunity_workflow.py` 必须先生成 `model-health.md/json`。当模式是 `config_required` 时，本轮只输出模型接入引导和 `workflow-summary`，不得继续生成平台路由、证据墙、反向证据墙、模型讨论、Gate 评估或 PRD。

@@ -21,13 +21,11 @@
 cp templates/real-run-case.example.json tests/runs/my-real-case.json
 ```
 
-2. 参考 `templates/model-pool.providers.example.json` 配置模型。真实密钥只放到环境变量、macOS Keychain、1Password、Bitwarden、dotenv 本地私有文件或模型 CLI 登录态中，不写进 JSON：
+2. 参考 `templates/model-pool.providers.example.json` 配置模型。真实密钥只放到环境变量、macOS Keychain、1Password、Bitwarden、dotenv 本地私有文件或模型 CLI 登录态中，不写进 JSON。配置文件只写环境变量名，例如：
 
 ```bash
-export DEEPSEEK_API_KEY="..."
-export GLM_API_KEY="..."
-export GEMINI_API_KEY="..."
-export GROK_API_KEY="..."
+# 在你的 shell、Keychain、1Password、Bitwarden 或本地私有 dotenv 中准备真实密钥。
+# 模型池 JSON 只保存变量名：DEEPSEEK_API_KEY、GLM_API_KEY、GEMINI_API_KEY、GROK_API_KEY。
 ```
 
 3. 准备真实运行并衔接工作流：

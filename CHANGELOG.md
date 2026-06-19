@@ -1,5 +1,31 @@
 # Changelog
 
+## v1.2.6
+
+### Added
+
+- Added model-pool Bootstrap as the hard first stage for the end-to-end workflow.
+- Added CLI and OpenAI-compatible connection candidate discovery in model health checks.
+- Added structured `--json-output` support for model health checks.
+- Added Pivot-to-Go loop for opportunities that need a narrower cut before PRD generation.
+
+### Changed
+
+- Stopped `run_opportunity_workflow.py` at `ConfigRequired` when no external model passes the skill-owned model pool health check.
+- Restricted discussion execution to models registered in the model pool and passing health checks.
+- Updated Chinese and English docs to clarify that discovered candidates do not count as usable models until configured and checked.
+- Replaced plaintext-looking API key export examples with safer environment-variable guidance.
+
+### Verified
+
+- `python3 -m py_compile scripts/*.py`
+- `python3 scripts/quick_validate.py`
+- `python3 scripts/simulate_user_flow.py`
+- ConfigRequired workflow stops before evidence scan, discussion, Gate, or PRD generation
+- Go workflow generates and validates commercial + engineering PRD
+- Pivot-to-Go workflow preserves reverse evidence, reruns Gate, and validates generated PRD
+- Sensitive information and reference-trace audit
+
 ## v1.2.5
 
 ### Added

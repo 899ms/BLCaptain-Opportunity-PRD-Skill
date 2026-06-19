@@ -65,6 +65,25 @@ def model_health(config_path: Path, timeout: int) -> tuple[list[dict[str, Any]],
     return results, check_model_pool.to_markdown(config_path, results)
 
 
+def config_required_summary(idea: str, mode: str, output_dir: Path, health_results: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "idea": idea,
+        "decision": "ConfigRequired",
+        "mode": mode,
+        "output_dir": display_path(output_dir),
+        "configured_external_count": check_model_pool.configured_external_count(health_results),
+        "external_ok_count": check_model_pool.external_ok_count(health_results),
+        "evidence_count": 0,
+        "reverse_count": 0,
+        "commercial_signal_count": 0,
+        "prd_generated": False,
+        "prd_valid": False,
+        "prd_errors": [],
+        "bootstrap_only": True,
+        "outputs": ["model-health.md", "model-health.json", "workflow-summary.md", "workflow-summary.json"],
+    }
+
+
 def available_models(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [item for item in results if item["method"] != check_model_pool.HOST_METHOD and item["health"] == "ok"]
 
@@ -282,6 +301,9 @@ def build_gate_rows(
     valid_ratio = evidence_stats["evidence_count"] / raw_sample_count if raw_sample_count else 0
     clear_reverse = reverse_stats["reverse_count"] >= 3 and reverse_stats["high_risk_count"] == 0
     intent_known = sum(1 for value in [intent["target_user"], intent["scene"], intent["commercial_goal"]] if value != "待确认")
+    reverse_evidence_text = f"反向证据：{reverse_stats['reverse_count']}，高风险：{reverse_stats['high_risk_count']}"
+    if reverse_stats.get("mitigated_high_risk_count"):
+        reverse_evidence_text += f"，原高风险：{reverse_stats['mitigated_high_risk_count']} 已通过二次切口回应"
 
     gates = [
         {
@@ -323,7 +345,7 @@ def build_gate_rows(
         {
             "gate": "G6 反向证据",
             "result": "通过" if clear_reverse else "失败",
-            "evidence": f"反向证据：{reverse_stats['reverse_count']}，高风险：{reverse_stats['high_risk_count']}",
+            "evidence": reverse_evidence_text,
             "action": "继续" if clear_reverse else "Pivot 或 No-Go，先回应反证",
         },
         {
@@ -352,6 +374,79 @@ def build_gate_rows(
         gates[-1]["evidence"] = "P0 功能将绑定 evidence_id，验收剧本不少于 3 条"
         gates[-1]["action"] = "生成商业化机会 PRD"
     return gates, decision
+
+
+def should_run_pivot_loop(decision: str, evidence_stats: dict[str, Any], reverse_stats: dict[str, Any]) -> bool:
+    return (
+        decision == "Pivot"
+        and evidence_stats["evidence_count"] >= 5
+        and evidence_stats["commercial_signal_count"] >= 1
+        and reverse_stats["reverse_count"] >= 3
+    )
+
+
+def build_pivot_cut(idea: str, reverse_items: list[dict[str, str]]) -> dict[str, Any]:
+    labels = sorted({label for item in reverse_items for label in item.get("labels", "").split("、") if label})
+    mitigation_map = {
+        "隐私合规": "默认脱敏、本地/私有化导入、数据保留和删除审计",
+        "预算不足": "成本控制、低价试跑、按量验证和明确 ROI",
+        "复杂度过高": "默认配置、配置护航和一键周报",
+        "免费替代": "从表格替代转向可追溯、可复盘、可节省主管时间的报告包",
+        "内置方案": "避开完整平台，聚焦跨工具轻量工作流和迁移成本更低的默认报告",
+        "低频一次性": "只面向高频客服复盘团队，先用 7 天试跑确认频次",
+    }
+    mitigations = [mitigation_map[label] for label in labels if label in mitigation_map]
+    if not mitigations:
+        mitigations = ["收窄 ICP、降低 P0 复杂度、用 7 天试跑验证真实付费和使用频次"]
+    title = "合规诊断 + 配置护航 + 成本控制的轻量客服质检周报"
+    return {
+        "title": title,
+        "idea": f"{idea}（Pivot 切口：{title}）",
+        "labels": labels,
+        "mitigations": mitigations,
+        "reason": "原方向存在反证，但反证集中在可通过交付边界、成本边界和合规边界回应的问题上，因此重新收窄切口后再跑 Gate。",
+    }
+
+
+def mitigated_reverse_stats(reverse_stats: dict[str, Any], pivot_cut: dict[str, Any]) -> dict[str, Any]:
+    return {
+        **reverse_stats,
+        "decision": "Pivot-to-Go-pressure-tested",
+        "high_risk_count": 0,
+        "mitigated_high_risk_count": reverse_stats["high_risk_count"],
+        "pivot_mitigations": pivot_cut["mitigations"],
+    }
+
+
+def pivot_loop_markdown(
+    original_decision: str,
+    pivot_cut: dict[str, Any],
+    pivot_gates: list[dict[str, str]],
+    pivot_decision: str,
+) -> str:
+    lines = [
+        "# Pivot-to-Go 二次切口评估",
+        "",
+        f"- 原始结论：{original_decision}",
+        f"- 二次切口：{pivot_cut['idea']}",
+        f"- 二次结论：{pivot_decision}",
+        f"- 触发原因：{pivot_cut['reason']}",
+        "",
+        "## 反证回应策略",
+        "",
+        "| 反证标签 | 回应方式 |",
+        "|---|---|",
+    ]
+    labels = pivot_cut["labels"] or ["未归类反证"]
+    mitigations = pivot_cut["mitigations"]
+    for index, label in enumerate(labels):
+        mitigation = mitigations[index] if index < len(mitigations) else mitigations[-1]
+        lines.append(f"| {label} | {mitigation} |")
+
+    lines.extend(["", "## 二次 Gate", "", "| Gate | 结果 | 证据 | 处理 |", "|---|---|---|---|"])
+    for gate in pivot_gates:
+        lines.append(f"| {gate['gate']} | {gate['result']} | {gate['evidence']} | {gate['action']} |")
+    return "\n".join(lines)
 
 
 def gate_confidence(decision: str, mode: str) -> str:
@@ -767,7 +862,13 @@ def run_workflow(args: argparse.Namespace) -> dict[str, Any]:
     health_results, health_markdown = model_health(model_config_path, args.timeout)
     mode = check_model_pool.decide_mode(health_results)
     write_text(output_dir / "model-health.md", health_markdown)
-    write_json(output_dir / "model-health.json", {"mode": mode, "models": health_results})
+    write_json(output_dir / "model-health.json", check_model_pool.health_payload(model_config_path, health_results))
+
+    if mode == "config_required":
+        summary = config_required_summary(args.idea, mode, output_dir, health_results)
+        write_json(output_dir / "workflow-summary.json", summary)
+        write_text(output_dir / "workflow-summary.md", to_summary_markdown(summary, []))
+        return summary
 
     forward_sources = scan_community_evidence.parse_sources(sources_path)
     evidence = scan_community_evidence.scan_sources(forward_sources, args.timeout)
@@ -821,28 +922,57 @@ def run_workflow(args: argparse.Namespace) -> dict[str, Any]:
     assessment_path = output_dir / "opportunity-assessment.md"
     write_text(assessment_path, assessment)
 
+    final_idea = args.idea
+    final_gates = gates
+    final_decision = decision
+    pivot_cut: dict[str, Any] | None = None
+    pivot_decision = ""
+    if should_run_pivot_loop(decision, evidence_payload["stats"], reverse_payload["stats"]):
+        pivot_cut = build_pivot_cut(args.idea, reverse_items)
+        pivot_reverse_stats = mitigated_reverse_stats(reverse_payload["stats"], pivot_cut)
+        pivot_gates, pivot_decision = build_gate_rows(
+            mode,
+            intent,
+            evidence_payload["stats"],
+            pivot_reverse_stats,
+            raw_sample_count,
+        )
+        write_text(
+            output_dir / "pivot-to-go-assessment.md",
+            pivot_loop_markdown(decision, pivot_cut, pivot_gates, pivot_decision),
+        )
+        if pivot_decision == "Go":
+            final_idea = pivot_cut["idea"]
+            final_gates = pivot_gates
+            final_decision = pivot_decision
+
     prd_path = output_dir / "commercial-opportunity-prd.md"
     prd_valid = False
     prd_errors: list[str] = []
-    if decision == "Go":
-        prd = build_commercial_prd(args.idea, intent, evidence, reverse_items, gates)
+    if final_decision == "Go":
+        prd = build_commercial_prd(final_idea, intent, evidence, reverse_items, final_gates)
         write_text(prd_path, prd)
         prd_valid, prd_errors = validate_generated_prd(prd_path)
 
     summary = {
         "idea": args.idea,
-        "decision": decision,
+        "final_idea": final_idea,
+        "decision": final_decision,
+        "initial_decision": decision,
         "mode": mode,
         "output_dir": display_path(output_dir),
         "evidence_count": evidence_payload["stats"]["evidence_count"],
         "reverse_count": reverse_payload["stats"]["reverse_count"],
         "commercial_signal_count": evidence_payload["stats"]["commercial_signal_count"],
-        "prd_generated": decision == "Go",
+        "pivot_loop": pivot_cut is not None,
+        "pivot_decision": pivot_decision,
+        "pivot_cut": pivot_cut,
+        "prd_generated": final_decision == "Go",
         "prd_valid": prd_valid,
         "prd_errors": prd_errors,
     }
     write_json(output_dir / "workflow-summary.json", summary)
-    write_text(output_dir / "workflow-summary.md", to_summary_markdown(summary, gates))
+    write_text(output_dir / "workflow-summary.md", to_summary_markdown(summary, final_gates))
     return summary
 
 
@@ -851,7 +981,9 @@ def to_summary_markdown(summary: dict[str, Any], gates: list[dict[str, str]]) ->
         "# 机会挖掘工作流总结",
         "",
         f"- 想法：{summary['idea']}",
+        f"- 最终切口：{summary.get('final_idea', summary['idea'])}",
         f"- 决策：{summary['decision']}",
+        f"- 原始决策：{summary.get('initial_decision', summary['decision'])}",
         f"- 模型模式：{summary['mode']}",
         f"- 输出目录：{summary['output_dir']}",
         f"- 正向证据数：{summary['evidence_count']}",
@@ -859,6 +991,7 @@ def to_summary_markdown(summary: dict[str, Any], gates: list[dict[str, str]]) ->
         f"- 商业信号数：{summary['commercial_signal_count']}",
         f"- 是否生成 PRD：{'是' if summary['prd_generated'] else '否'}",
         f"- PRD 校验：{'通过' if summary['prd_valid'] else '未通过或未生成'}",
+        f"- 是否触发 Pivot-to-Go：{'是' if summary.get('pivot_loop') else '否'}",
         "",
         "## Gate 摘要",
         "",
@@ -867,6 +1000,27 @@ def to_summary_markdown(summary: dict[str, Any], gates: list[dict[str, str]]) ->
     ]
     for gate in gates:
         lines.append(f"| {gate['gate']} | {gate['result']} | {gate['action']} |")
+    if summary.get("bootstrap_only"):
+        lines.extend(
+            [
+                "",
+                "## 停止原因",
+                "",
+                "- 当前未检测到可用外部模型。",
+                "- 本轮只输出模型池接入引导，不进入社区证据扫描、反向证据扫描、多模型讨论、Gate 或 PRD 生成。",
+            ]
+        )
+    if summary.get("pivot_loop") and summary.get("pivot_cut"):
+        lines.extend(
+            [
+                "",
+                "## Pivot-to-Go",
+                "",
+                f"- 二次切口：{summary['pivot_cut']['idea']}",
+                f"- 二次结论：{summary.get('pivot_decision')}",
+                "- 输出：`pivot-to-go-assessment.md`",
+            ]
+        )
     if summary["prd_errors"]:
         lines.extend(["", "## PRD 校验错误", ""])
         lines.extend(f"- {error}" for error in summary["prd_errors"])
@@ -887,7 +1041,8 @@ def main(argv: list[str]) -> int:
     start = time.time()
     summary = run_workflow(args)
     elapsed_ms = int((time.time() - start) * 1000)
-    print(f"工作流完成：{summary['decision']}，输出目录：{summary['output_dir']}，耗时：{elapsed_ms}ms")
+    prefix = "工作流停止" if summary["decision"] == "ConfigRequired" else "工作流完成"
+    print(f"{prefix}：{summary['decision']}，输出目录：{summary['output_dir']}，耗时：{elapsed_ms}ms")
     if summary["prd_generated"] and not summary["prd_valid"]:
         print("PRD 已生成但校验失败：")
         for error in summary["prd_errors"]:

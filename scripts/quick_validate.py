@@ -180,7 +180,7 @@ def validate_simulation_script(errors: list[str]) -> None:
 
 def validate_p1_files(errors: list[str]) -> None:
     model_script = read_text("scripts/check_model_pool.py")
-    for marker in ["openai_compatible", "missing_secret", "cli", "api_key_env", "redact"]:
+    for marker in ["openai_compatible", "missing_secret", "cli", "api_key_env", "redact", "discover_cli_candidates", "json-output"]:
         if marker not in model_script:
             errors.append(f"check_model_pool.py 缺少 {marker}")
 
@@ -209,12 +209,12 @@ def validate_p2_files(errors: list[str]) -> None:
 
 def validate_p3_files(errors: list[str]) -> None:
     orchestration = read_text("references/workflow-orchestration.md")
-    for marker in ["run_opportunity_workflow.py", "--run-discussion", "commercial-opportunity-prd.md", "workflow-summary"]:
+    for marker in ["run_opportunity_workflow.py", "--run-discussion", "commercial-opportunity-prd.md", "workflow-summary", "Pivot-to-Go"]:
         if marker not in orchestration:
             errors.append(f"workflow-orchestration.md 缺少 {marker}")
 
     workflow_script = read_text("scripts/run_opportunity_workflow.py")
-    for marker in ["run_workflow", "assign_roles", "model-discussion.md", "opportunity-assessment.md", "commercial-opportunity-prd.md", "validate_generated_prd"]:
+    for marker in ["run_workflow", "assign_roles", "model-discussion.md", "opportunity-assessment.md", "commercial-opportunity-prd.md", "validate_generated_prd", "config_required_summary", "should_run_pivot_loop"]:
         if marker not in workflow_script:
             errors.append(f"run_opportunity_workflow.py 缺少 {marker}")
 

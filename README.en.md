@@ -7,7 +7,7 @@
 ![Python](https://img.shields.io/badge/Python-%3E%3D3.10-2b2622.svg)
 ![Agent Skill](https://img.shields.io/badge/Agent-Skill-d98e3a.svg)
 ![Evidence Based](https://img.shields.io/badge/PRD-Evidence--Based-2f5ea7.svg)
-[![Release](https://img.shields.io/github/v/release/dososo/BLCaptain-Opportunity-PRD-Skill?label=Release)](https://github.com/dososo/BLCaptain-Opportunity-PRD-Skill/releases/tag/v1.2.5)
+[![Release](https://img.shields.io/github/v/release/dososo/BLCaptain-Opportunity-PRD-Skill?label=Release)](https://github.com/dososo/BLCaptain-Opportunity-PRD-Skill/releases/tag/v1.2.6)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ## What It Does
@@ -84,6 +84,8 @@ Codex should then:
 4. Explain how to store secrets in environment variables, Keychain, 1Password, Bitwarden, a private local dotenv file, or the model CLI login state.
 5. Run the health check and explain whether the status is `config_required`, `low_confidence`, `standard`, or `heavy_discussion`.
 
+The health check also shows connection candidates, such as Claude CLI, Gemini CLI, Ollama, local models, or common OpenAI-compatible providers. Candidates are only setup hints; they are not counted as usable models until written into the model pool JSON and passed by the health check.
+
 If you prefer manual setup:
 
 1. Create a local model config, for example `my-model-pool.json`.
@@ -124,6 +126,7 @@ Health check:
 
 ```bash
 python3 scripts/check_model_pool.py --config my-model-pool.json
+python3 scripts/check_model_pool.py --config my-model-pool.json --json-output model-health.json
 ```
 
 Status meanings:
