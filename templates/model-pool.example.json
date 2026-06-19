@@ -1,0 +1,29 @@
+{
+  "version": "1.0",
+  "models": [
+    {
+      "id": "mock-cli",
+      "display_name": "Mock CLI Model",
+      "method": "cli",
+      "command": "python3 tests/fixtures/mock_model_cli.py",
+      "capability_tags": ["structure", "general"],
+      "test_prompt": "ping"
+    },
+    {
+      "id": "openai-compatible-example",
+      "display_name": "OpenAI-compatible Example",
+      "method": "openai_compatible",
+      "base_url": "https://api.example.com/v1",
+      "model": "example-model",
+      "api_key_env": "OPPORTUNITY_PRD_EXAMPLE_API_KEY",
+      "capability_tags": ["long_context", "commercial_reverse"],
+      "test_prompt": "ping"
+    },
+    {
+      "id": "codex-host",
+      "display_name": "Codex Host",
+      "method": "codex_builtin",
+      "capability_tags": ["orchestration", "file_generation", "validation"]
+    }
+  ]
+}

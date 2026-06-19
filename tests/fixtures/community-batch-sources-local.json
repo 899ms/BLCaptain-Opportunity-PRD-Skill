@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "sources": [
+    {
+      "id": "S-BATCH-001",
+      "platform": "混合社区样本目录",
+      "type": "directory",
+      "url": "tests/fixtures/community-batch"
+    }
+  ]
+}

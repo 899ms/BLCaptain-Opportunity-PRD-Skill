@@ -1,0 +1,33 @@
+{
+  "version": "1.0",
+  "idea": "AI 客服质检工具",
+  "model_config": "templates/model-pool.example.json",
+  "positive_sources": [
+    {
+      "id": "P-001",
+      "platform": "公开社区评论页",
+      "type": "url",
+      "url": "https://example.com/public-positive-comments"
+    },
+    {
+      "id": "P-002",
+      "platform": "本地导出评论样本",
+      "type": "file",
+      "url": "tests/fixtures/community-sample-customer-service.md"
+    }
+  ],
+  "reverse_sources": [
+    {
+      "id": "R-001",
+      "platform": "公开竞品差评页",
+      "type": "url",
+      "url": "https://example.com/public-reverse-comments"
+    },
+    {
+      "id": "R-002",
+      "platform": "本地导出反向样本",
+      "type": "file",
+      "url": "tests/fixtures/community-reverse-customer-service-go.md"
+    }
+  ]
+}

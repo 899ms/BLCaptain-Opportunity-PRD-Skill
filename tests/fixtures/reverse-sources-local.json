@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "sources": [
+    {
+      "id": "R-S-001",
+      "platform": "反向证据样本",
+      "type": "file",
+      "url": "tests/fixtures/community-reverse-customer-service.md"
+    }
+  ]
+}

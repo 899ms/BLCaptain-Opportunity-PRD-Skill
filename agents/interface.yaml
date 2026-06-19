@@ -1,0 +1,24 @@
+interface:
+  display_name: "Opportunity to Commercial PRD"
+  short_description: "从社区评论证据挖掘产品机会，并在 Go 后生成商业化 PRD。"
+  default_prompt: "Use $opportunity-to-commercial-prd to analyze my product idea from community comment evidence. Start with model configuration status, route platforms dynamically, build evidence and reverse-evidence walls, run business Gates, output an opportunity assessment first, and generate a commercial opportunity PRD only if the result is Go."
+compatibility:
+  canonical_format: "agent-skills"
+  adapter_targets:
+    - "openai"
+    - "claude"
+    - "generic"
+  activation:
+    mode: "manual"
+    paths: []
+  execution:
+    context: "inline"
+    shell: "bash"
+  trust:
+    source_tier: "local"
+    remote_inline_execution: "forbid"
+    remote_metadata_policy: "allow-metadata-only"
+  degradation:
+    openai: "uses the skill workflow to produce evidence-backed opportunity assessments and commercial PRDs"
+    claude: "uses the same Gate and evidence contract to structure opportunity discovery"
+    generic: "falls back to the references and Markdown templates"

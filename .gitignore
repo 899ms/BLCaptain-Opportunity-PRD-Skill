@@ -1,0 +1,16 @@
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Local env and secrets
+.env
+.env.*
+!.env.example
+
+# Generated run outputs
+tests/runs/

@@ -1,0 +1,17 @@
+{
+  "version": "1.0",
+  "sources": [
+    {
+      "id": "S-001",
+      "platform": "小红书商家评论",
+      "type": "file",
+      "url": "tests/fixtures/community-sample-customer-service.md"
+    },
+    {
+      "id": "S-002",
+      "platform": "Reddit smallbusiness",
+      "type": "file",
+      "url": "tests/fixtures/community-sample-customer-service-en.md"
+    }
+  ]
+}

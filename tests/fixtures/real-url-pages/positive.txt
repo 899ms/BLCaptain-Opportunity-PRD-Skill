@@ -1,0 +1,11 @@
+# Public URL Positive Sample
+
+- 2026-06-16 小红书商家评论：每天手动抽客服聊天太慢，月底才发现漏掉的问题，如果能自动导出周报愿意付费。
+
+- 2026-06-15 Reddit smallbusiness: Manually checking support chats in a spreadsheet takes hours every week. A cheap weekly export would save time.
+
+- 2026-06-14 V2EX：客服主管现在靠截图复盘新人，整理一次半天，收费工具太贵，只想要轻量报告。
+
+- 2026-06-13 Product Hunt review: I would pay for a simple QA report, but current tools are too expensive and setup is too slow.
+
+- 2026-06-12 即刻：表格整理客服问题真的费时间，如果价格合适愿意买。

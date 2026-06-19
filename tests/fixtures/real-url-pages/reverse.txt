@@ -1,0 +1,7 @@
+# Public URL Reverse Sample
+
+- 2026-06-16 Reddit smallbusiness: The free tier is enough for a hobby shop, but spreadsheet is enough only until feedback gets messy.
+
+- 2026-06-15 Product Hunt review: Enterprise QA tools are too complex; we only need a simple weekly report.
+
+- 2026-06-14 V2EX：这个需求偶尔出现，但客服量上来后手动抽查不稳定，最好有低配置默认报告。

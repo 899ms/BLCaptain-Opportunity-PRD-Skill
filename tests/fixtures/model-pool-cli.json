@@ -1,0 +1,13 @@
+{
+  "version": "1.0",
+  "models": [
+    {
+      "id": "mock-cli",
+      "display_name": "Mock CLI Model",
+      "method": "cli",
+      "command": "python3 tests/fixtures/mock_model_cli.py",
+      "capability_tags": ["structure", "general"],
+      "test_prompt": "ping"
+    }
+  ]
+}

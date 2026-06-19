@@ -1,0 +1,39 @@
+{
+  "version": "1.0",
+  "models": [
+    {
+      "id": "model-a-openai-compatible",
+      "display_name": "Model A OpenAI-compatible",
+      "method": "openai_compatible",
+      "base_url": "https://api.example.com/v1",
+      "model": "model-a-example",
+      "api_key_env": "MODEL_A_API_KEY",
+      "capability_tags": ["structure", "general", "long_context"],
+      "test_prompt": "ping"
+    },
+    {
+      "id": "model-b-openai-compatible",
+      "display_name": "Model B OpenAI-compatible",
+      "method": "openai_compatible",
+      "base_url": "https://api.example.com/v1",
+      "model": "model-b-example",
+      "api_key_env": "MODEL_B_API_KEY",
+      "capability_tags": ["commercial_reverse", "business", "general"],
+      "test_prompt": "ping"
+    },
+    {
+      "id": "local-cli-model",
+      "display_name": "Local CLI Model",
+      "method": "cli",
+      "command": "your-model-cli --once",
+      "capability_tags": ["general"],
+      "test_prompt": "ping"
+    },
+    {
+      "id": "agent-host",
+      "display_name": "Agent Host",
+      "method": "codex_builtin",
+      "capability_tags": ["orchestration", "file_generation", "validation"]
+    }
+  ]
+}
