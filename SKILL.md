@@ -4,7 +4,7 @@ description: |
   从社区评论证据挖掘产品机会并生成商业化 PRD 的 Codex skill。Use when the user wants to turn a product idea,赛道,评论样本,社区帖子,机会卡,痛点线索,竞品评价,或用户反馈 into an evidence-backed opportunity assessment, No-Go/Watch/Pivot/Go decision, 7-day validation plan, or commercial opportunity PRD. This skill requires model configuration status first, dynamic multi-model role assignment when available, community evidence, reverse evidence, business Gate checks, and Codex-led final synthesis.
 ---
 
-# Opportunity-to-Commercial-PRD
+# BLCaptain Opportunity PRD Skill
 
 把一句产品想法或一组社区评论，转成可追溯的机会评估报告；只有 Gate 通过时，才生成商业化机会 + 工程实施 PRD。
 

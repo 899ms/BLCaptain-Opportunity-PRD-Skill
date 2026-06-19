@@ -2,13 +2,15 @@
 
 > 把一个产品想法，从社区评论里的真实痛点，一路推进到可工程实施的商业化 PRD。
 
+[English README](README.en.md)
+
 ![Python](https://img.shields.io/badge/Python-%3E%3D3.10-2b2622.svg)
 ![Agent Skill](https://img.shields.io/badge/Agent-Skill-d98e3a.svg)
 ![Evidence Based](https://img.shields.io/badge/PRD-Evidence--Based-2f5ea7.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 > **安装**：对支持 Skill 的 Agent 说：  
-> 「帮我安装这个 Skill：`github.com/dososo/blcaptain-digg-prd`」
+> 「帮我安装 **BLCaptain Opportunity PRD Skill**：仓库 `github.com/dososo/blcaptain-digg-prd`」
 
 ---
 
@@ -163,11 +165,11 @@ BLCaptain Opportunity PRD Skill 解决的是这个问题：先从社区评论、
 # 通用方式
 npx skills add dososo/blcaptain-digg-prd -g
 
-# 或手动安装
+# 或手动安装。下面的 blcaptain-digg-prd 是 GitHub 仓库目录名，不是 Skill 名称。
 git clone https://github.com/dososo/blcaptain-digg-prd.git
 
 # 复制到你的 Agent skills 目录
-cp -R blcaptain-digg-prd ~/.codex/skills/
+cp -R blcaptain-digg-prd ~/.codex/skills/BLCaptain-Opportunity-PRD-Skill
 ```
 
 环境要求：
@@ -279,7 +281,7 @@ python3 scripts/validate_opportunity_prd.py path/to/report-or-prd.md
 ## 目录结构
 
 ```text
-blcaptain-digg-prd/
+BLCaptain Opportunity PRD Skill/
 ├── SKILL.md                 # 给 Agent 读取的主指令
 ├── README.md                # 项目说明
 ├── CHANGELOG.md             # 版本更新记录

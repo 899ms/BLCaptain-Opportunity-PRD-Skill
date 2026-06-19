@@ -401,7 +401,7 @@ def simulate_real_run_prepare(errors: list[str]) -> str:
 def build_report(errors: list[str], sections: list[tuple[str, str]]) -> str:
     status = "PASS" if not errors else "FAIL"
     lines = [
-        "# Opportunity-to-Commercial-PRD 真实用户端到端演练报告",
+        "# BLCaptain Opportunity PRD Skill 真实用户端到端演练报告",
         "",
         f"- 日期：{date.today().isoformat()}",
         f"- 结果：{status}",

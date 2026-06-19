@@ -115,7 +115,7 @@ def read_source(source: Source, timeout: int) -> str:
     if source.source_type == "url":
         request = urllib.request.Request(
             source.url,
-            headers={"User-Agent": "opportunity-to-commercial-prd/1.0"},
+            headers={"User-Agent": "BLCaptain-Opportunity-PRD-Skill/1.0"},
         )
         with urllib.request.urlopen(request, timeout=timeout) as response:
             raw = response.read(1_000_000)

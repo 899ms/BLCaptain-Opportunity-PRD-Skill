@@ -92,7 +92,7 @@ def fetch_public_url(url: str, timeout: int, allow_local: bool) -> dict[str, Any
 
     request = urllib.request.Request(
         url,
-        headers={"User-Agent": "opportunity-to-commercial-prd/1.0 real-run-prep"},
+        headers={"User-Agent": "BLCaptain-Opportunity-PRD-Skill/1.0 real-run-prep"},
     )
     try:
         opener = urllib.request.build_opener(urllib.request.ProxyHandler({})) if allow_local and is_local_host(parsed.hostname) else urllib.request

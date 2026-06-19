@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.2.3
+
+### Added
+
+- Added `README.en.md` for English-speaking users.
+
+### Changed
+
+- Unified user-facing Skill naming as `BLCaptain Opportunity PRD Skill`.
+- Kept the machine-readable Skill identifier and repository slug only where they are required for loading or installation.
+- Updated generated report titles, interface metadata, and HTTP User-Agent tokens to use the public Skill name.
+
 ## v1.2.2
 
 ### Changed

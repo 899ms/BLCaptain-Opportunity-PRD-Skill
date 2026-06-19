@@ -92,7 +92,7 @@ def check_openai_compatible(model: dict[str, Any], timeout: int) -> dict[str, An
         headers={
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
-            "User-Agent": "opportunity-to-commercial-prd/1.0",
+            "User-Agent": "BLCaptain-Opportunity-PRD-Skill/1.0",
         },
     )
 

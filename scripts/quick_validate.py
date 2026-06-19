@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 REQUIRED_FILES = [
     "SKILL.md",
     "README.md",
+    "README.en.md",
     "agents/interface.yaml",
     "references/model-config-guide.md",
     "references/model-assignment.md",
@@ -109,12 +110,24 @@ def validate_interface(errors: list[str]) -> None:
         "display_name:",
         "short_description:",
         "default_prompt:",
-        "$opportunity-to-commercial-prd",
+        "BLCaptain Opportunity PRD Skill",
         "canonical_format:",
     ]
     for marker in required:
         if marker not in text:
             errors.append(f"agents/interface.yaml 缺少 {marker}")
+
+
+def validate_readmes(errors: list[str]) -> None:
+    zh = read_text("README.md")
+    en = read_text("README.en.md")
+    for path, text in [("README.md", zh), ("README.en.md", en)]:
+        if "BLCaptain Opportunity PRD Skill" not in text:
+            errors.append(f"{path} 缺少正式 Skill 名称")
+    if "README.en.md" not in zh:
+        errors.append("README.md 缺少英文 README 链接")
+    if "README.md" not in en:
+        errors.append("README.en.md 缺少中文 README 链接")
 
 
 def validate_references(errors: list[str]) -> None:
@@ -257,6 +270,7 @@ def main() -> int:
     if not errors:
         validate_skill_frontmatter(errors)
         validate_interface(errors)
+        validate_readmes(errors)
         validate_references(errors)
         validate_one_line_fixture(errors)
         validate_simulation_script(errors)
