@@ -218,6 +218,7 @@ Created and maintained by **BLCaptain**.
 - GitHub: [@dososo](https://github.com/dososo)
 - X / Twitter: [@thinkszyg](https://x.com/thinkszyg)
 - Email: [blteam2026@outlook.com](mailto:blteam2026@outlook.com)
+- Maintainer of the open-source Chinese Traditional Patterns Catalog: [wenyang.net](https://wenyang.net)
 
 ## License
 
