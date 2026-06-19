@@ -339,10 +339,6 @@ A：目标就是让它能进入开发。校验器会检查字段字典、API 契
 **Q：这个工具能保证商业成功吗？**  
 A：不能。它能减少“凭感觉开工”的风险，但最终仍需要真实用户访谈、试用、付费测试和持续迭代。
 
-## License
-
-MIT License. See [LICENSE](LICENSE).
-
 ## 关于作者
 
 由 **爆裂队长NEXT（BLCaptain）** 独立创作与维护。
@@ -352,3 +348,7 @@ MIT License. See [LICENSE](LICENSE).
 - 邮箱：[blteam2026@outlook.com](mailto:blteam2026@outlook.com)
 
 如果这个项目对你有帮助，欢迎 Star、分享，或在 X 上 @我交流。
+
+## License
+
+MIT License. See [LICENSE](LICENSE).

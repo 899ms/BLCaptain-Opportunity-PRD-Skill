@@ -211,10 +211,6 @@ A Go PRD must include:
 
 If these are missing, the PRD should not be handed to engineering.
 
-## License
-
-MIT License. See [LICENSE](LICENSE).
-
 ## Author
 
 Created and maintained by **BLCaptain**.
@@ -222,3 +218,7 @@ Created and maintained by **BLCaptain**.
 - GitHub: [@dososo](https://github.com/dososo)
 - X / Twitter: [@thinkszyg](https://x.com/thinkszyg)
 - Email: [blteam2026@outlook.com](mailto:blteam2026@outlook.com)
+
+## License
+
+MIT License. See [LICENSE](LICENSE).
