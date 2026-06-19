@@ -61,7 +61,29 @@ Configuration files:
 - `templates/model-pool.example.json`: empty default model pool for new users; no mock model is included.
 - `templates/model-pool.providers.example.json`: copyable examples for DeepSeek, GLM, Claude CLI, Gemini, Grok, and local models.
 
-Minimal setup:
+The simplest path is to ask Codex to configure the model for you after installation:
+
+```text
+Use BLCaptain Opportunity PRD Skill to connect DeepSeek.
+I have an API key, and I want the environment variable name to be DEEPSEEK_API_KEY.
+```
+
+Or:
+
+```text
+Use BLCaptain Opportunity PRD Skill to connect Claude CLI.
+My local non-interactive command is: claude -p
+```
+
+Codex should then:
+
+1. Decide whether the model should use `openai_compatible` or `cli`.
+2. Create or update a local model config file.
+3. Remind you not to put real API keys in JSON.
+4. Explain how to store secrets in environment variables, Keychain, 1Password, Bitwarden, a private local dotenv file, or the model CLI login state.
+5. Run the health check and explain whether the status is `config_required`, `low_confidence`, `standard`, or `heavy_discussion`.
+
+If you prefer manual setup:
 
 1. Create a local model config, for example `my-model-pool.json`.
 2. Copy the model entries you need from `templates/model-pool.providers.example.json`.

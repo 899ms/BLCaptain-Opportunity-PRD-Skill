@@ -6,7 +6,7 @@
 
 ## 配置格式
 
-使用 JSON。默认 `templates/model-pool.example.json` 是空模型池，新用户可参考 `templates/model-pool.providers.example.json`。
+优先让 Codex 帮用户生成或更新本地模型配置文件。用户只需要说“帮我接入 DeepSeek，我想用环境变量 `DEEPSEEK_API_KEY`”或“帮我接入 Claude CLI，命令是 `claude -p`”。手动配置时使用 JSON：默认 `templates/model-pool.example.json` 是空模型池，新用户可参考 `templates/model-pool.providers.example.json`。
 
 支持三种方法：
 

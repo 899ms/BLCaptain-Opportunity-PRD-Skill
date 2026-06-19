@@ -56,15 +56,15 @@ def simulate_no_model(errors: list[str]) -> str:
 | 外部模型通过数 | 0 |
 | Codex 主持状态 | 可主持（不计入外部模型） |
 
-## 三步配置引导
+## 最简单配置方式
 
-1. 添加模型：填写 DeepSeek、GLM、Claude、Gemini、Grok 或本地模型名称。
-2. 填调用方式：OpenAI-compatible URL、CLI 命令或暂不确定。
-3. 测试并选择用途：长文本、商业反方、结构化、外部趋势、代码实现或通用。
+直接告诉 Codex：帮我接入 DeepSeek / GLM / Claude / Gemini / Grok / 本地模型。
+如果有 API Key，只告诉 Codex 环境变量名；如果有 CLI，只提供本机非交互命令。
+Codex 会生成或更新本地模型配置，并运行健康检查。
 
 当前不进入机会分析，不生成平台路由、证据墙或商业化机会 PRD。
 """
-    assert_contains(output, ["配置状态 | config_required", "三步配置引导"], "未配置模型", errors)
+    assert_contains(output, ["配置状态 | config_required", "最简单配置方式", "帮我接入"], "未配置模型", errors)
     assert_not_contains(output, ["# 商业化机会 PRD", "## 0. 商业速读卡"], "未配置模型", errors)
     return output
 
@@ -433,7 +433,7 @@ def build_report(errors: list[str], sections: list[tuple[str, str]]) -> str:
         "",
         "## 覆盖场景",
         "",
-        "- 未配置模型：只输出三步配置引导。",
+        "- 未配置模型：只输出 Codex 代配模型引导和手动配置入口。",
         "- 单模型低置信度：可继续做机会初筛，但不声称多模型讨论。",
         "- 一句话想法：先出模型配置状态、意图卡、平台路由、证据墙模板、机会评估报告。",
         "- No-Go：趋势文章无评论原话时必须拦住。",

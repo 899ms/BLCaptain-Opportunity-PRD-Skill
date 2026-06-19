@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.2.5
+
+### Added
+
+- Added a simpler Codex-assisted model setup path for new users.
+- Documented user-friendly prompts for connecting DeepSeek, GLM, Claude CLI, Gemini, Grok, and local CLI models.
+
+### Changed
+
+- Made Codex-assisted setup the recommended path in Chinese and English README files.
+- Updated model configuration guidance, health-check output, and simulation fixtures so users do not need to start by editing JSON manually.
+- Kept manual JSON configuration as the advanced fallback for users who want full control.
+
+### Verified
+
+- `python3 scripts/quick_validate.py`
+- `python3 scripts/simulate_user_flow.py`
+- `python3 -m py_compile scripts/check_model_pool.py scripts/run_opportunity_workflow.py scripts/prepare_real_run.py scripts/simulate_user_flow.py scripts/quick_validate.py`
+- New-user install simulation from a fresh GitHub clone
+- Sensitive information and reference-trace audit
+
 ## v1.2.4
 
 ### Changed

@@ -8,7 +8,23 @@
 | Codex 主持状态 | 可主持（不计入外部模型） |
 | 降级说明 | 无可用外部模型时只输出配置引导 |
 
-## 三步配置引导
+## 最简单配置方式
+
+直接告诉 Codex：
+
+```text
+帮我接入 DeepSeek。我有 API Key，环境变量名用 DEEPSEEK_API_KEY。
+```
+
+或：
+
+```text
+帮我接入 Claude CLI。本机非交互命令是：claude -p
+```
+
+Codex 会判断调用方式、生成或更新本地模型配置、提醒密钥安全，并运行健康检查。
+
+## 手动配置引导
 
 1. 添加模型：填写模型名称，例如 DeepSeek、GLM、Claude、Gemini、Grok、Local Model。
 2. 填调用方式：OpenAI-compatible URL、CLI 命令或暂不确定。
