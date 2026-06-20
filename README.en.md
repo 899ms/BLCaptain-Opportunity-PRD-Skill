@@ -7,8 +7,19 @@
 ![Python](https://img.shields.io/badge/Python-%3E%3D3.10-2b2622.svg)
 ![Agent Skill](https://img.shields.io/badge/Agent-Skill-d98e3a.svg)
 ![Evidence Based](https://img.shields.io/badge/PRD-Evidence--Based-2f5ea7.svg)
-[![Release](https://img.shields.io/github/v/release/dososo/BLCaptain-Opportunity-PRD-Skill?label=Release)](https://github.com/dososo/BLCaptain-Opportunity-PRD-Skill/releases/tag/v1.2.6)
+[![Release](https://img.shields.io/github/v/release/dososo/BLCaptain-Opportunity-PRD-Skill?label=Release)](https://github.com/dososo/BLCaptain-Opportunity-PRD-Skill/releases/tag/v1.2.7)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+## First Run
+
+After installation, ask Codex to check the model Agent setup first:
+
+```text
+Use BLCaptain Opportunity PRD Skill and check my model configuration first.
+If no model pool exists, show supported model Agents and guide me to connect DeepSeek / GLM / Claude CLI / Gemini / Grok / local models.
+```
+
+The Skill should show supported Agent types, the local config path, secret-safety rules, and the health-check command before running community evidence analysis. With no usable external model, it outputs setup guidance only.
 
 ## What It Does
 

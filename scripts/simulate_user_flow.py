@@ -69,6 +69,38 @@ Codex 会生成或更新本地模型配置，并运行健康检查。
     return output
 
 
+def simulate_first_run_onboarding(errors: list[str]) -> str:
+    config_path = RUN_DIR / "new-user-model-pool.json"
+    if config_path.exists():
+        config_path.unlink()
+    output = run_command(
+        [
+            "python3",
+            "scripts/setup_model_pool.py",
+            "--doctor",
+            "--config",
+            str(config_path),
+        ],
+        ROOT,
+        "首次配置向导",
+        errors,
+    )
+    assert_contains(
+        output,
+        [
+            "首次使用：先配置你的模型 Agent",
+            "OpenAI-compatible",
+            "CLI Agent",
+            "模型池文件不存在",
+            "config_required",
+        ],
+        "首次配置向导",
+        errors,
+    )
+    assert_not_contains(output, ["# 商业化机会 PRD", "## 0. 商业速读卡"], "首次配置向导", errors)
+    return output
+
+
 def simulate_one_model(errors: list[str]) -> str:
     output = read("tests/fixtures/one-line-idea-resume-outline.md")
     assert_contains(output, ["low_confidence", "单模型低置信度", "机会评估报告"], "单模型低置信度", errors)
@@ -387,6 +419,60 @@ def simulate_full_workflow_pivot(errors: list[str]) -> str:
     return output
 
 
+def simulate_codex_cut_to_go(errors: list[str]) -> str:
+    output_dir = RUN_DIR / "opportunity-workflow-codex-cut"
+    output = run_command(
+        [
+            "python3",
+            "scripts/run_opportunity_workflow.py",
+            "--idea",
+            "Codex 国内用户痛点解决方案",
+            "--model-config",
+            "tests/fixtures/model-pool-cli.json",
+            "--sources",
+            "tests/fixtures/community-codex-broad-sources-local.json",
+            "--reverse-sources",
+            "tests/fixtures/community-codex-reverse-sources-local.json",
+            "--output-dir",
+            str(output_dir),
+            "--run-discussion",
+        ],
+        ROOT,
+        "Codex 宽泛痛点 Cut-to-Go 工作流",
+        errors,
+    )
+    assert_contains(output, ["工作流完成：Go", "opportunity-workflow-codex-cut"], "Codex 宽泛痛点 Cut-to-Go 工作流", errors)
+
+    summary_path = output_dir / "workflow-summary.json"
+    prd_path = output_dir / "commercial-opportunity-prd.md"
+    cut_path = output_dir / "cut-to-go-assessment.md"
+    cluster_path = output_dir / "pain-clusters.md"
+    for path in [summary_path, prd_path, cut_path, cluster_path]:
+        if not path.exists():
+            errors.append(f"Codex 宽泛痛点 Cut-to-Go 工作流缺少输出文件：{path}")
+
+    if summary_path.exists():
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        selected_cut = summary.get("selected_cut") or {}
+        if summary.get("decision") != "Go" or not summary.get("cut_loop") or selected_cut.get("id") != "model_setup":
+            errors.append("Codex 宽泛痛点没有通过 Cut-to-Go 收窄到模型配置护航")
+        if not summary.get("prd_valid"):
+            errors.append("Codex 宽泛痛点 Cut-to-Go PRD 未通过校验")
+
+    if prd_path.exists():
+        prd = prd_path.read_text(encoding="utf-8")
+        assert_contains(prd, ["模型配置", "健康检查", "API 契约", "字段字典", "7 天验证计划"], "Codex Cut-to-Go PRD", errors)
+        assert_not_contains(prd, ["客服", "质检", "周报"], "Codex Cut-to-Go PRD", errors)
+        validate_output = run_command(
+            ["python3", "scripts/validate_opportunity_prd.py", str(prd_path)],
+            ROOT,
+            "Codex Cut-to-Go PRD 校验",
+            errors,
+        )
+        assert_contains(validate_output, ["validate_opportunity_prd passed"], "Codex Cut-to-Go PRD 校验", errors)
+    return output
+
+
 class QuietHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, format: str, *args: object) -> None:
         return
@@ -486,6 +572,7 @@ def build_report(errors: list[str], sections: list[tuple[str, str]]) -> str:
         "## 覆盖场景",
         "",
         "- 未配置模型：只输出 Codex 代配模型引导和手动配置入口。",
+        "- 首次配置向导：全新用户没有模型池时展示支持的模型 Agent、配置路径、安全规则和健康检查。",
         "- 单模型低置信度：可继续做机会初筛，但不声称多模型讨论。",
         "- 一句话想法：先出模型配置状态、意图卡、平台路由、证据墙模板、机会评估报告。",
         "- No-Go：趋势文章无评论原话时必须拦住。",
@@ -497,6 +584,7 @@ def build_report(errors: list[str], sections: list[tuple[str, str]]) -> str:
         "- 反向证据扫描：能输出 reverse_id，并在高风险反证出现时阻止直接 Go。",
         "- 新用户空模型池工作流：停在模型池 Bootstrap，不进入机会分析。",
         "- 端到端工作流：Go 样例生成并校验商业化 PRD，Pivot 样例会先重定义切口再尝试 Go。",
+        "- Cut-to-Go：宽泛社区痛点先拆痛点簇，再选择可 Go 的最小切口生成工程 PRD。",
         "- 真实运行准备：公开 URL 能快照成本地 sources，并衔接 P3 工作流。",
         "",
     ]
@@ -516,19 +604,21 @@ def main() -> int:
     errors: list[str] = []
     sections = [
         ("场景 1：未配置模型", simulate_no_model(errors)),
-        ("场景 2：单模型低置信度 + 一句话想法", simulate_one_model(errors)),
-        ("场景 3：No-Go 证据不足", validate_report_fixture("tests/fixtures/nogo-trend-only.md", "No-Go", errors)),
-        ("场景 4：Go 后生成商业化机会 PRD", validate_report_fixture("tests/fixtures/go-customer-service.md", "Go", errors)),
-        ("场景 5：模型健康检查", simulate_model_health(errors)),
-        ("场景 6：Codex 主持不计入外部模型", simulate_codex_only_model_pool(errors)),
-        ("场景 7：缺密钥模型不伪装成功", simulate_missing_secret(errors)),
-        ("场景 8：新用户空模型池工作流", simulate_config_required_workflow(errors)),
-        ("场景 9：社区证据扫描", simulate_community_scan(errors)),
-        ("场景 10：批量社区扫描和结构化导出", simulate_batch_exports(errors)),
-        ("场景 11：反向证据扫描", simulate_reverse_scan(errors)),
-        ("场景 12：P3 端到端 Go 工作流", simulate_full_workflow_go(errors)),
-        ("场景 13：P3 端到端 Pivot-to-Go 工作流", simulate_full_workflow_pivot(errors)),
-        ("场景 14：P4 真实 URL 准备和工作流", simulate_real_run_prepare(errors)),
+        ("场景 2：首次配置向导", simulate_first_run_onboarding(errors)),
+        ("场景 3：单模型低置信度 + 一句话想法", simulate_one_model(errors)),
+        ("场景 4：No-Go 证据不足", validate_report_fixture("tests/fixtures/nogo-trend-only.md", "No-Go", errors)),
+        ("场景 5：Go 后生成商业化机会 PRD", validate_report_fixture("tests/fixtures/go-customer-service.md", "Go", errors)),
+        ("场景 6：模型健康检查", simulate_model_health(errors)),
+        ("场景 7：Codex 主持不计入外部模型", simulate_codex_only_model_pool(errors)),
+        ("场景 8：缺密钥模型不伪装成功", simulate_missing_secret(errors)),
+        ("场景 9：新用户空模型池工作流", simulate_config_required_workflow(errors)),
+        ("场景 10：社区证据扫描", simulate_community_scan(errors)),
+        ("场景 11：批量社区扫描和结构化导出", simulate_batch_exports(errors)),
+        ("场景 12：反向证据扫描", simulate_reverse_scan(errors)),
+        ("场景 13：P3 端到端 Go 工作流", simulate_full_workflow_go(errors)),
+        ("场景 14：P3 端到端 Pivot-to-Go 工作流", simulate_full_workflow_pivot(errors)),
+        ("场景 15：Codex 宽泛痛点 Cut-to-Go 工作流", simulate_codex_cut_to_go(errors)),
+        ("场景 16：P4 真实 URL 准备和工作流", simulate_real_run_prepare(errors)),
     ]
 
     RUN_DIR.mkdir(parents=True, exist_ok=True)

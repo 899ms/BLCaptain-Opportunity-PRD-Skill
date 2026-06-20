@@ -19,6 +19,8 @@
 ## 命令
 
 ```bash
+python3 scripts/setup_model_pool.py --doctor
+python3 scripts/setup_model_pool.py --init
 python3 scripts/check_model_pool.py --config templates/model-pool.example.json
 python3 scripts/check_model_pool.py --config templates/model-pool.providers.example.json
 ```

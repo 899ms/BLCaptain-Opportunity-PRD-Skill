@@ -16,6 +16,8 @@ REQUIRED_FILES = [
     "README.en.md",
     "agents/interface.yaml",
     "references/model-config-guide.md",
+    "references/first-run-onboarding.md",
+    "references/model-agent-catalog.md",
     "references/model-assignment.md",
     "references/eight-step-workflow.md",
     "references/workflow-gates.md",
@@ -29,6 +31,7 @@ REQUIRED_FILES = [
     "references/workflow-orchestration.md",
     "references/real-run-playbook.md",
     "templates/model-config-status.md",
+    "templates/model-setup-welcome.md",
     "templates/intent-card.md",
     "templates/evidence-pack.md",
     "templates/opportunity-assessment-report.md",
@@ -39,6 +42,7 @@ REQUIRED_FILES = [
     "templates/community-sources.example.json",
     "templates/real-run-case.example.json",
     "scripts/check_model_pool.py",
+    "scripts/setup_model_pool.py",
     "scripts/scan_community_evidence.py",
     "scripts/scan_reverse_evidence.py",
     "scripts/run_opportunity_workflow.py",
@@ -64,6 +68,10 @@ REQUIRED_FILES = [
     "tests/fixtures/one-line-idea-resume-outline.md",
     "tests/fixtures/nogo-trend-only.md",
     "tests/fixtures/go-customer-service.md",
+    "tests/fixtures/community-codex-broad-pains.md",
+    "tests/fixtures/community-codex-broad-sources-local.json",
+    "tests/fixtures/community-codex-reverse.md",
+    "tests/fixtures/community-codex-reverse-sources-local.json",
 ]
 
 SKILL_REQUIRED_TERMS = [
@@ -147,6 +155,16 @@ def validate_references(errors: list[str]) -> None:
         if marker not in evidence:
             errors.append(f"evidence-rules.md 缺少 {marker}")
 
+    first_run = read_text("references/first-run-onboarding.md")
+    for marker in ["首次运行引导", "模型 Agent", "帮我接入", "配置完成前不进入机会分析"]:
+        if marker not in first_run:
+            errors.append(f"first-run-onboarding.md 缺少 {marker}")
+
+    catalog = read_text("references/model-agent-catalog.md")
+    for marker in ["OpenAI-compatible", "长文本 CLI", "代码/原型 CLI", "本地模型 CLI", "Codex 主持"]:
+        if marker not in catalog:
+            errors.append(f"model-agent-catalog.md 缺少 {marker}")
+
 
 def validate_one_line_fixture(errors: list[str]) -> None:
     text = read_text("tests/fixtures/one-line-idea-resume-outline.md")
@@ -173,7 +191,18 @@ def validate_one_line_fixture(errors: list[str]) -> None:
 
 def validate_simulation_script(errors: list[str]) -> None:
     text = read_text("scripts/simulate_user_flow.py")
-    for marker in ["未配置模型", "单模型低置信度", "No-Go", "Go", "模型健康检查", "社区证据扫描", "RUN_DIR", "user-flow-simulation"]:
+    for marker in [
+        "未配置模型",
+        "首次配置向导",
+        "单模型低置信度",
+        "No-Go",
+        "Go",
+        "模型健康检查",
+        "社区证据扫描",
+        "Cut-to-Go",
+        "RUN_DIR",
+        "user-flow-simulation",
+    ]:
         if marker not in text:
             errors.append(f"simulate_user_flow.py 缺少演练标记：{marker}")
 
@@ -183,6 +212,11 @@ def validate_p1_files(errors: list[str]) -> None:
     for marker in ["openai_compatible", "missing_secret", "cli", "api_key_env", "redact", "discover_cli_candidates", "json-output"]:
         if marker not in model_script:
             errors.append(f"check_model_pool.py 缺少 {marker}")
+
+    setup_script = read_text("scripts/setup_model_pool.py")
+    for marker in ["USER_CONFIG_PATH", "--init", "--doctor", "WELCOME_TEMPLATE", "health_payload"]:
+        if marker not in setup_script:
+            errors.append(f"setup_model_pool.py 缺少 {marker}")
 
     scan_script = read_text("scripts/scan_community_evidence.py")
     for marker in ["file", "url", "evidence_id", "Go-candidate", "用户原话", "商业信号"]:
@@ -209,12 +243,26 @@ def validate_p2_files(errors: list[str]) -> None:
 
 def validate_p3_files(errors: list[str]) -> None:
     orchestration = read_text("references/workflow-orchestration.md")
-    for marker in ["run_opportunity_workflow.py", "--run-discussion", "commercial-opportunity-prd.md", "workflow-summary", "Pivot-to-Go"]:
+    for marker in ["run_opportunity_workflow.py", "--run-discussion", "commercial-opportunity-prd.md", "workflow-summary", "Pivot-to-Go", "Cut-to-Go"]:
         if marker not in orchestration:
             errors.append(f"workflow-orchestration.md 缺少 {marker}")
 
     workflow_script = read_text("scripts/run_opportunity_workflow.py")
-    for marker in ["run_workflow", "assign_roles", "model-discussion.md", "opportunity-assessment.md", "commercial-opportunity-prd.md", "validate_generated_prd", "config_required_summary", "should_run_pivot_loop"]:
+    for marker in [
+        "run_workflow",
+        "resolve_model_config",
+        "assign_roles",
+        "model-discussion.md",
+        "opportunity-assessment.md",
+        "commercial-opportunity-prd.md",
+        "validate_generated_prd",
+        "config_required_summary",
+        "should_run_pivot_loop",
+        "cluster_pain_points",
+        "cut-to-go-assessment.md",
+        "is_overbroad_opportunity",
+        "build_model_setup_prd",
+    ]:
         if marker not in workflow_script:
             errors.append(f"run_opportunity_workflow.py 缺少 {marker}")
 

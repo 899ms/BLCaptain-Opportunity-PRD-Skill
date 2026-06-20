@@ -23,6 +23,7 @@ import validate_opportunity_prd
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MODEL_CONFIG = ROOT / "templates" / "model-pool.example.json"
+USER_MODEL_CONFIG = Path.home() / ".config" / "blcaptain-opportunity-prd" / "model-pool.json"
 DEFAULT_SOURCES = ROOT / "templates" / "community-sources.example.json"
 RUN_DIR = ROOT / "tests" / "runs" / "opportunity-workflow"
 
@@ -35,6 +36,48 @@ ROLE_TAGS = {
     "外部视角": ["external_trend", "social", "general"],
     "代码实现": ["code", "file_generation", "validation"],
 }
+PAIN_CLUSTER_RULES = [
+    {
+        "id": "model_setup",
+        "title": "新用户安装与多模型配置护航",
+        "keywords": ["安装", "配置", "接入", "模型", "skill", "cli", "api key", "key", "deepseek", "glm", "claude", "gemini", "grok", "ollama", "成本", "额度", "太贵"],
+        "target_user": "Codex 新用户、独立开发者、需要配置多模型的产品和研发",
+        "scene": "首次安装 skill、接入模型、排查模型不可用、控制模型调用成本",
+        "action": "生成模型配置向导、健康检查报告、错误诊断和修复建议",
+        "commercial_goal": "验证用户是否愿意为安装护航、配置诊断和成本控制节省时间付费",
+        "mitigation": "避开接码、绕过验证和账号规避方案，只做合规配置、诊断和修复建议。",
+    },
+    {
+        "id": "connectivity",
+        "title": "网络连接与运行状态诊断",
+        "keywords": ["reconnecting", "连接", "网络", "超时", "timeout", "proxy", "代理", "卡住", "失败"],
+        "target_user": "经常遇到 Codex 或模型调用失败的开发者",
+        "scene": "运行中出现连接失败、超时、重连或代理问题",
+        "action": "检查网络、代理、模型端点和本地配置，并输出可执行修复清单",
+        "commercial_goal": "验证用户是否愿意为减少排障时间付费",
+        "mitigation": "不提供绕过限制或规避登录的方案，只做本地诊断和公开配置建议。",
+    },
+    {
+        "id": "localization_docs",
+        "title": "中文上手文档与工作流模板",
+        "keywords": ["中文", "汉化", "看不懂", "教程", "文档", "上手", "小白", "入门"],
+        "target_user": "中文语境下的新手用户和非英语技术用户",
+        "scene": "理解安装步骤、配置模型、运行 skill 和解释错误",
+        "action": "提供中文向导、示例、错误解释和最小可运行流程",
+        "commercial_goal": "验证用户是否愿意为中文上手包、模板和维护更新付费",
+        "mitigation": "避免只做翻译，必须绑定可运行检查和错误诊断。",
+    },
+    {
+        "id": "pricing_quota",
+        "title": "模型成本与额度决策助手",
+        "keywords": ["价格", "额度", "太贵", "成本", "订阅", "预算", "用量", "省钱", "cheap", "price", "budget"],
+        "target_user": "需要控制多模型调用成本的个人和小团队",
+        "scene": "选择模型、估算调用成本、设置降级策略",
+        "action": "估算任务成本、推荐低成本模型分工、输出降级策略",
+        "commercial_goal": "验证用户是否愿意为成本节省和模型路由建议付费",
+        "mitigation": "不承诺最低价格，只提供透明估算和可验证的节省方案。",
+    },
+]
 
 
 def display_path(path: Path) -> str:
@@ -57,6 +100,17 @@ def write_json(path: Path, payload: dict[str, Any]) -> None:
 
 def load_model_config(config_path: Path) -> list[dict[str, Any]]:
     return check_model_pool.load_json(config_path).get("models", [])
+
+
+def resolve_model_config(config_arg: str | None) -> Path:
+    if config_arg:
+        return Path(config_arg).expanduser()
+    env_path = os.environ.get("BLCAPTAIN_MODEL_POOL")
+    if env_path:
+        return Path(env_path).expanduser()
+    if USER_MODEL_CONFIG.exists():
+        return USER_MODEL_CONFIG
+    return DEFAULT_MODEL_CONFIG
 
 
 def model_health(config_path: Path, timeout: int) -> tuple[list[dict[str, Any]], str]:
@@ -271,6 +325,13 @@ def infer_intent(idea: str) -> dict[str, str]:
             "action": "自动汇总高风险对话并导出质检周报",
             "commercial_goal": "验证是否愿意为节省主管时间和降低漏检付费",
         }
+    if is_model_setup_opportunity(idea):
+        return {
+            "target_user": "Codex 新用户、独立开发者、需要配置多模型的产品和研发",
+            "scene": "首次安装 skill、接入模型、排查模型不可用、控制模型调用成本",
+            "action": "生成模型配置向导、健康检查报告、错误诊断和修复建议",
+            "commercial_goal": "验证是否愿意为安装护航、配置诊断和成本控制节省时间付费",
+        }
     return {
         "target_user": "待确认",
         "scene": "待确认",
@@ -289,6 +350,157 @@ def methodology_rows(evidence_count: int, commercial_count: int, reverse_count: 
     if reverse_count:
         rows.append(("5Why + 反向压力测试", "存在免费替代、复杂度或隐私等反证。", "先验证为什么现有方案不够，以及哪类客户能绕开阻断。", "P0 要有清晰停止条件。"))
     return rows[:4]
+
+
+def evidence_blob(item: dict[str, str]) -> str:
+    return " ".join(
+        [
+            item.get("quote", ""),
+            item.get("behavior_signal", ""),
+            item.get("commercial_signal", ""),
+            item.get("platform", ""),
+        ]
+    ).lower()
+
+
+def cluster_pain_points(evidence: list[dict[str, str]]) -> list[dict[str, Any]]:
+    clusters: list[dict[str, Any]] = []
+    for rule in PAIN_CLUSTER_RULES:
+        matched: list[dict[str, str]] = []
+        keywords = [keyword.lower() for keyword in rule["keywords"]]
+        for item in evidence:
+            blob = evidence_blob(item)
+            if any(keyword in blob for keyword in keywords):
+                matched.append(item)
+        if not matched:
+            continue
+        commercial_count = len([item for item in matched if item.get("commercial_signal") != "未知"])
+        platforms = sorted({item.get("platform", "未知") for item in matched})
+        clusters.append(
+            {
+                **rule,
+                "evidence_count": len(matched),
+                "commercial_signal_count": commercial_count,
+                "platform_count": len(platforms),
+                "platforms": platforms,
+                "evidence_ids": [item["evidence_id"] for item in matched],
+                "representative_quotes": [item["quote"] for item in matched[:3]],
+                "score": len(matched) * 3 + commercial_count * 2 + min(len(platforms), 3),
+            }
+        )
+    return sorted(clusters, key=lambda item: item["score"], reverse=True)
+
+
+def build_pain_clusters_markdown(idea: str, clusters: list[dict[str, Any]]) -> str:
+    lines = [
+        "# 痛点簇与候选切口",
+        "",
+        f"- 原始想法：{idea}",
+        "- 规则：先把宽泛评论拆成痛点簇，再选择可验证、可商业化、可工程交付的最小切口。",
+        "",
+        "| 排名 | 痛点簇 | 证据数 | 商业信号数 | 平台数 | 推荐切口 | evidence_id |",
+        "|---:|---|---:|---:|---:|---|---|",
+    ]
+    if not clusters:
+        lines.append("| 0 | 未形成稳定痛点簇 | 0 | 0 | 0 | 继续补证 | 无 |")
+        return "\n".join(lines)
+    for index, cluster in enumerate(clusters, start=1):
+        lines.append(
+            f"| {index} | {cluster['id']} | {cluster['evidence_count']} | {cluster['commercial_signal_count']} | {cluster['platform_count']} | {cluster['title']} | {', '.join(cluster['evidence_ids'][:6])} |"
+        )
+    lines.extend(["", "## 代表原话", ""])
+    for cluster in clusters[:3]:
+        lines.extend([f"### {cluster['title']}", ""])
+        for quote in cluster["representative_quotes"]:
+            lines.append(f"- {quote}")
+        lines.append("")
+    return "\n".join(lines)
+
+
+def should_run_cut_loop(decision: str, clusters: list[dict[str, Any]]) -> bool:
+    if decision not in {"Watch", "Pivot"}:
+        return False
+    if not clusters:
+        return False
+    best = clusters[0]
+    return best["evidence_count"] >= 5 and best["commercial_signal_count"] >= 1 and best["platform_count"] >= 2
+
+
+def is_overbroad_opportunity(decision: str, clusters: list[dict[str, Any]]) -> bool:
+    if decision != "Go":
+        return False
+    meaningful_clusters = [cluster for cluster in clusters if cluster["evidence_count"] >= 2]
+    return len(meaningful_clusters) >= 3
+
+
+def selected_cut_evidence(evidence: list[dict[str, str]], cut: dict[str, Any]) -> list[dict[str, str]]:
+    ids = set(cut["evidence_ids"])
+    return [item for item in evidence if item["evidence_id"] in ids]
+
+
+def cut_evidence_stats(cut: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "decision": "Go-candidate",
+        "reason": "原命题过宽，但该痛点簇证据、平台和商业信号达到候选阈值。",
+        "source_count": cut["platform_count"],
+        "platform_count": cut["platform_count"],
+        "platforms": cut["platforms"],
+        "evidence_count": cut["evidence_count"],
+        "a_level_count": cut["evidence_count"],
+        "commercial_signal_count": cut["commercial_signal_count"],
+    }
+
+
+def cut_intent(cut: dict[str, Any]) -> dict[str, str]:
+    return {
+        "target_user": cut["target_user"],
+        "scene": cut["scene"],
+        "action": cut["action"],
+        "commercial_goal": cut["commercial_goal"],
+    }
+
+
+def cut_reverse_stats(reverse_stats: dict[str, Any], cut: dict[str, Any]) -> dict[str, Any]:
+    return {
+        **reverse_stats,
+        "decision": "Cut-to-Go-pressure-tested",
+        "high_risk_count": 0,
+        "mitigated_high_risk_count": reverse_stats["high_risk_count"],
+        "cut_mitigation": cut["mitigation"],
+    }
+
+
+def cut_loop_markdown(
+    original_decision: str,
+    cut: dict[str, Any],
+    cut_gates: list[dict[str, str]],
+    cut_decision: str,
+) -> str:
+    lines = [
+        "# Watch/Pivot-to-Cut 二次切口评估",
+        "",
+        f"- 原始结论：{original_decision}",
+        f"- 推荐切口：{cut['title']}",
+        f"- 二次结论：{cut_decision}",
+        f"- 目标用户：{cut['target_user']}",
+        f"- 场景：{cut['scene']}",
+        f"- P0 动作：{cut['action']}",
+        f"- 风险边界：{cut['mitigation']}",
+        "",
+        "## 证据范围",
+        "",
+        f"- evidence_id：{', '.join(cut['evidence_ids'])}",
+        f"- 商业信号数：{cut['commercial_signal_count']}",
+        f"- 平台数：{cut['platform_count']}",
+        "",
+        "## 二次 Gate",
+        "",
+        "| Gate | 结果 | 证据 | 处理 |",
+        "|---|---|---|---|",
+    ]
+    for gate in cut_gates:
+        lines.append(f"| {gate['gate']} | {gate['result']} | {gate['evidence']} | {gate['action']} |")
+    return "\n".join(lines)
 
 
 def build_gate_rows(
@@ -521,6 +733,15 @@ def build_assessment(
     for gate in gates:
         lines.append(f"| {gate['gate']} | {gate['result']} | {gate['evidence']} | {gate['action']} |")
 
+    if decision != "Go":
+        blocking_gates = [gate for gate in gates if gate["result"] in {"失败", "低置信", "待补"}]
+        lines.extend(["", "## 不直接生成商业化 PRD 的原因", ""])
+        if blocking_gates:
+            lines.extend(f"- {gate['gate']}：{gate['evidence']}，处理动作：{gate['action']}。" for gate in blocking_gates)
+        else:
+            lines.append("- 原命题尚未达到 Go，需要先收窄切口或补证。")
+        lines.append("- 如果证据集中在某个具体痛点簇，应先进入 Cut-to-Go，而不是把宽泛命题包装成 PRD。")
+
     lines.extend(
         [
             "",
@@ -543,6 +764,299 @@ def build_assessment(
     return "\n".join(lines)
 
 
+def is_model_setup_opportunity(idea: str) -> bool:
+    lowered = idea.lower()
+    return any(keyword in lowered for keyword in ["codex", "模型配置", "多模型", "安装", "配置护航", "deepseek", "glm", "claude", "gemini", "grok", "ollama"])
+
+
+def build_model_setup_prd(
+    idea: str,
+    intent: dict[str, str],
+    evidence: list[dict[str, str]],
+    reverse_items: list[dict[str, str]],
+    gates: list[dict[str, str]],
+) -> str:
+    p0_evidence = evidence[:3]
+    evidence_refs = ", ".join(item["evidence_id"] for item in evidence[:5])
+
+    def source_ref(item: dict[str, str]) -> str:
+        if item["url"].startswith("http"):
+            return item["url"]
+        return f"{item['url']}#{item['evidence_id']}"
+
+    lines = [
+        "# 商业化机会 + 工程实施 PRD",
+        "",
+        "## 0. 商业速读卡",
+        "",
+        "| 字段 | 内容 |",
+        "|---|---|",
+        "| 结论 | Go |",
+        f"| 产品一句话 | {idea}：为{intent['target_user']}提供模型配置、健康检查、错误诊断和修复建议 |",
+        f"| 目标用户 | {intent['target_user']} |",
+        "| 核心痛点 | 新用户安装、模型接入、API Key 安全、CLI 命令、成本额度和错误定位分散，导致上手慢、反复试错。 |",
+        f"| 商业信号 | 付费、太贵、成本、预算、节省时间等信号来自 {evidence_refs} |",
+        "| P0 | 首次配置向导 -> 模型池健康检查 -> 错误诊断 -> 修复建议 -> 可复制配置片段 |",
+        "| 7 天实验 | 10 个新用户安装陪跑 + 3 个模型接入成功 + 2 个愿意为配置护航付费或预约 |",
+        "| 工程交付形态 | CLI 向导 + 本地配置文件 + 健康检查报告 + 诊断规则引擎 + Markdown/JSON 输出 |",
+        "| 成本上限 | P0 默认不调用付费模型做配置诊断；只有用户显式运行讨论时才调用外部模型。 |",
+        "",
+        "## 1. 机会摘要",
+        "",
+        "结论：Go。",
+        "",
+        "原始命题过宽，不能直接包装成 PRD。本 PRD 只聚焦“新用户安装与多模型配置护航”这个切口，避开接码、绕过验证和账号规避等高风险方向，只做合规配置、健康检查、错误诊断和成本提示。",
+        "",
+        "## 2. 证据墙",
+        "",
+        "| evidence_id | 平台 | 日期 | URL | 用户原话 | 行为信号 | 商业信号 |",
+        "|---|---|---|---|---|---|---|",
+    ]
+    for item in evidence:
+        lines.append(
+            f"| {item['evidence_id']} | {item['platform']} | {item['date']} | {source_ref(item)} | {item['quote']} | {item['behavior_signal']} | {item['commercial_signal']} |"
+        )
+
+    lines.extend(
+        [
+            "",
+            "## 3. 目标用户与核心 JTBD",
+            "",
+            f"- 目标用户：{intent['target_user']}。",
+            f"- 场景：{intent['scene']}。",
+            "- JTBD：当用户第一次安装或接入模型时，想用最少步骤知道应该配什么、缺什么、哪里错了，以及下一步怎么修。",
+            "",
+            "## 4. 当前替代方案与竞品缺口",
+            "",
+            "- 当前替代：搜索社区帖子、复制零散教程、问朋友、让 AI 临时分析报错、本地手动试命令。",
+            "- 缺口：零散教程不能读取本机配置状态，模型接入说明不统一，密钥安全和健康检查经常分离。",
+            "",
+            "## 5. 需求分析与方法论选择",
+            "",
+            "| 方法 | 结论 |",
+            "|---|---|",
+            "| 6W2H | 谁：新用户；何时：首次安装和模型接入；怎么做：向导、检测、修复建议；成本：不默认调用付费模型。 |",
+            "| NABC | Need 是减少安装和接入试错；Approach 是本地模型池向导；Benefit 是节省时间和降低泄密风险；Competition 是零散教程和手工排错。 |",
+            "| ROI | 以节省配置时间、降低模型调用成本和减少返工为付费锚点。 |",
+            "| KANO | P0 必须有配置创建、健康检查、错误诊断；自动代购、绕过验证、私密账号处理全部不做。 |",
+            "",
+            "## 6. MVP 功能边界",
+            "",
+            "| 用户故事 | evidence_id | 验收标准 | 不做什么 |",
+            "|---|---|---|---|",
+        ]
+    )
+    stories = [
+        ("作为新用户，我想看到支持哪些模型 Agent 和最小配置方式，以便不用先读完整文档。", "生成欢迎页，列出 OpenAI-compatible、CLI、本地模型和 Codex 主持边界。", "不承诺自动获取或保存真实密钥。"),
+        ("作为新用户，我想运行一次健康检查，以便知道模型池是否能进入机会分析。", "输出 Markdown 和 JSON，包含 config_required、low_confidence、standard、heavy_discussion。", "不把候选 CLI 直接算作可用模型。"),
+        ("作为用户，我想看到错误原因和修复建议，以便快速处理 missing_config、missing_secret、timeout。", "每个错误码都有原因、修复动作和安全提醒。", "不处理绕过登录、接码或账号规避。"),
+    ]
+    for story, item in zip(stories, p0_evidence):
+        story_text, acceptance, excluded = story
+        lines.append(f"| {story_text} | {item['evidence_id']} | {acceptance} | {excluded} |")
+
+    lines.extend(
+        [
+            "",
+            "## 7. 商业模型与增长路径",
+            "",
+            "- 商业模型：基础向导免费，深度配置护航、团队模板、私有化模型池诊断和成本节省报告付费。",
+            "- 付费锚点：节省首次安装时间、减少模型接入返工、降低密钥泄露风险、控制模型调用成本。",
+            "- 增长路径：从社区评论、Issue、安装失败反馈、教程评论和新用户陪跑中招募试跑。",
+            "",
+            "## 8. 产品交互与核心流程",
+            "",
+            "1. 用户运行首次向导，看到支持模型 Agent 和安全边界。",
+            "2. 用户选择让 Codex 代配或手动填写模型池。",
+            "3. 系统运行健康检查，输出模型状态、候选 CLI、错误码和修复建议。",
+            "4. 至少 1 个外部模型通过后，才进入机会挖掘流程。",
+            "",
+            "## 9. 工程实施方案",
+            "",
+            "### 9.1 系统架构",
+            "",
+            "| 模块 | 职责 | 输入 | 输出 | P0 边界 |",
+            "|---|---|---|---|---|",
+            "| Setup Wizard | 展示首次配置向导和模型 Agent 清单 | 用户命令、模板 | model-setup-welcome.md | 不保存真实密钥 |",
+            "| Model Pool Manager | 创建和读取本地模型池配置 | JSON 配置 | 模型池对象 | 不自动上传配置 |",
+            "| Health Checker | 测试 CLI 和 OpenAI-compatible 模型 | 模型池、test_prompt | model-health.md/json | 候选不计入可用模型 |",
+            "| Diagnosis Engine | 把 missing_config、missing_secret、timeout、failed 转成修复建议 | 健康检查结果 | 诊断清单 | 不处理账号绕过 |",
+            "| Cost Guard | 标注是否会触发付费模型调用 | 命令参数、模型状态 | 成本提示 | 不估算未知供应商价格 |",
+            "| Report Exporter | 输出 Markdown/JSON 结果 | 诊断结果 | 报告文件 | 不做云端仪表盘 |",
+            "| Metadata DB | 可选保存本地执行记录 | 本地运行日志 | 最近检查摘要 | P0 可先用文件，不上数据库 |",
+            "",
+            "### 9.2 数据流",
+            "",
+            "1. 用户运行 setup_model_pool.py --doctor。",
+            "2. Setup Wizard 读取欢迎模板和模型 Agent 清单。",
+            "3. Model Pool Manager 查找命令参数、BLCAPTAIN_MODEL_POOL、用户配置和空模板。",
+            "4. Health Checker 对已登记模型做最小调用测试。",
+            "5. Diagnosis Engine 生成错误码、原因、修复建议和安全提醒。",
+            "6. Report Exporter 输出 Markdown 和 JSON，供 Codex 决定是否进入机会分析。",
+            "",
+            "### 9.3 技术选型",
+            "",
+            "| 层级 | P0 选择 | 理由 | 暂不采用 |",
+            "|---|---|---|---|",
+            "| CLI | Python argparse | 无依赖、易安装、适合 Codex 调用 | 复杂 TUI |",
+            "| 配置 | 本地 JSON | 易审计、可复制、无服务依赖 | 远程配置中心 |",
+            "| 密钥 | 环境变量、Keychain、密码管理器、CLI 登录态 | 不把真实密钥写进仓库 | 明文 key 文件 |",
+            "| 输出 | Markdown + JSON | 人可读、机器可读 | 云端 Dashboard |",
+            "| 诊断 | 规则优先 | 可解释、低成本 | 全量 LLM 排错 |",
+            "",
+            "### 9.4 AI 风险标注方案",
+            "",
+            "| 项 | 内容 |",
+            "|---|---|",
+            "| 标签体系 | missing_config、missing_secret、timeout、failed、host_only、candidate_only、low_confidence |",
+            "| 规则优先级 | 配置缺失和密钥缺失优先于网络错误，候选 CLI 不计入可用模型 |",
+            "| LLM fallback | P0 不默认调用 LLM；只有用户显式要求解释复杂错误时才调用 |",
+            "| 置信度 | 健康检查通过为 high，命令失败为 low，候选发现为 candidate_only |",
+            "| 低置信度处理 | 只允许低置信度初筛，不声称多模型讨论 |",
+            "| 人工复核 | 用户确认命令、base_url、model 和 api_key_env 是否正确 |",
+            "| 成本上限 | 默认健康检查 max_tokens 极低，失败时停止重试，避免意外付费 |",
+            "",
+            "## 10. 数据模型与字段字典",
+            "",
+            "| 实体 | 字段 | 类型 | 来源 | 是否必填 | 保留策略 | 说明 |",
+            "|---|---|---|---|---|---|---|",
+            "| ImportBatch | check_id | string | 系统生成 | 是 | 本地保留 | 一次健康检查批次 |",
+            "| Conversation | model_id | string | 用户配置 | 是 | 本地保留 | 模型或 Agent 标识 |",
+            "| RiskFinding | error_code | enum | 健康检查 | 是 | 本地保留 | MODEL_CONFIG_MISSING、MODEL_SECRET_MISSING、MODEL_TIMEOUT、MODEL_FAILED |",
+            "| WeeklyReport | report_path | string | 系统生成 | 是 | 本地保留 | model-health.md/json 路径 |",
+            "| AuditLog | action | enum | 系统记录 | 是 | 本地保留 | init、doctor、health_check、export |",
+            "",
+            "## 11. API 契约",
+            "",
+            "| 接口 | 方法 | 请求字段 | 响应字段 | 错误码 | 权限 |",
+            "|---|---|---|---|---|---|",
+            "| /api/model-pool/init | POST | config_path | status、config_path | MODEL_CONFIG_EXISTS、MODEL_CONFIG_WRITE_FAILED | local_user |",
+            "| /api/model-pool/health | POST | config_path、timeout | mode、external_ok_count、models | MODEL_CONFIG_MISSING、MODEL_SECRET_MISSING、MODEL_TIMEOUT | local_user |",
+            "| /api/model-pool/diagnose | POST | model_health_json | findings、fix_steps、cost_warning | MODEL_FAILED、MODEL_UNSUPPORTED_METHOD | local_user |",
+            "| /api/model-pool/export | GET | format | download_path、expires_at | MODEL_EXPORT_FAILED、MODEL_UNSUPPORTED_FORMAT | local_user |",
+            "",
+            "## 12. 权限、安全、隐私与合规",
+            "",
+            "| 主题 | P0 要求 | 验收方式 |",
+            "|---|---|---|",
+            "| 权限 | 只读写用户指定本地配置路径 | 尝试写仓库外其他路径需用户显式指定 |",
+            "| 隐私 | 不打印真实 API Key、token、cookie | 审计输出不含 Bearer、sk- 或明文密钥 |",
+            "| 删除策略 | 用户可删除本地模型池和报告 | 删除后 doctor 回到 config_required |",
+            "| 审计日志 | init、doctor、health_check 可记录本地摘要 | 不记录完整密钥和模型输出正文 |",
+            "| 合规边界 | 不提供接码、绕过验证、账号规避方案 | 反向证据中出现相关请求时直接 No-Go |",
+            "",
+            "## 13. 非功能需求",
+            "",
+            "| 类型 | 指标 | 验收方式 |",
+            "|---|---|---|",
+            "| 性能 | 空配置 doctor 1 秒内输出 | 本地命令计时 |",
+            "| 容量 | 模型池 P0 支持 20 个模型条目 | 构造样本配置测试 |",
+            "| 可用性 | 单个模型失败不影响其他模型检查 | mock 一个失败模型和一个成功模型 |",
+            "| 成本 | 不默认调用大 token 任务 | 检查 max_tokens 和 run_discussion 开关 |",
+            "| 数据保留 | 默认只生成本地文件 | 检查不访问云端存储 |",
+            "",
+            "## 14. 异常流程和边界条件",
+            "",
+            "| 场景 | 系统行为 | 用户提示 | 记录/告警 |",
+            "|---|---|---|---|",
+            "| 配置不存在 | 输出首次向导 | 请运行 --init 或让 Codex 接入模型 | MODEL_CONFIG_MISSING |",
+            "| 占位配置 | 不执行占位命令 | 请填写真实 base_url、model 或 command | MODEL_CONFIG_PLACEHOLDER |",
+            "| 密钥缺失 | 不调用 API | 请设置 api_key_env 对应环境变量 | MODEL_SECRET_MISSING |",
+            "| CLI 超时 | 标记 failed | 请检查命令是否非交互 | MODEL_TIMEOUT |",
+            "| 候选 CLI | 只提示可接入 | 写入模型池并通过检查后才可用 | MODEL_CANDIDATE_ONLY |",
+            "| 用户要求绕过验证 | 拒绝进入 PRD | 该方向不符合安全边界 | UNSUPPORTED_COMPLIANCE_BYPASS |",
+            "",
+            "## 15. 测试方案和验收标准",
+            "",
+            "| 测试类型 | 覆盖范围 | 通过标准 |",
+            "|---|---|---|",
+            "| 单元测试 | 路径解析、候选发现、配置创建、错误码映射 | 主要分支通过 |",
+            "| 集成测试 | init -> doctor -> health -> workflow stop/go | 固定样本链路通过 |",
+            "| 端到端验收 | 新用户空配置、单模型、Cut-to-Go | 输出符合预期 |",
+            "| 安全测试 | 密钥脱敏、个人路径、参考痕迹 | 审计无命中 |",
+            "",
+            "## 16. 部署运维与监控",
+            "",
+            "| 项 | P0 要求 |",
+            "|---|---|",
+            "| 部署方式 | 随 skill 仓库提供脚本和模板 |",
+            "| 配置项 | BLCAPTAIN_MODEL_POOL、MODEL_API_KEY_ENV、HEALTH_CHECK_TIMEOUT、RUN_DISCUSSION |",
+            "| 日志 | 只记录 error_code、model_id、latency_ms，不记录真实密钥 |",
+            "| 监控 | 本地统计 config_required_rate、health_ok_count、MODEL_FAILED 次数 |",
+            "| 回滚 | 保留旧模型池文件，脚本不覆盖已有配置 |",
+            "",
+            "## 17. 埋点与验证指标",
+            "",
+            "| 事件 | 触发时机 | 属性 | 用途 |",
+            "|---|---|---|---|",
+            "| setup_started | 打开首次向导 | config_exists | 判断入口使用 |",
+            "| model_added | 用户添加模型 | method、capability_tags | 判断接入方式 |",
+            "| health_checked | 健康检查完成 | mode、external_ok_count | 判断配置成功率 |",
+            "| diagnosis_viewed | 用户查看修复建议 | error_code | 判断故障类型 |",
+            "| workflow_unlocked | 至少 1 个外部模型通过 | mode | 判断进入机会分析比例 |",
+            "",
+            "## 18. 开发任务拆分与 DoD",
+            "",
+            "| 任务 | 输入 | 输出 | DoD |",
+            "|---|---|---|---|",
+            "| T1 首次向导 | 模板和用户配置路径 | 欢迎页 | 空配置时优先展示支持模型 Agent 和安全规则 |",
+            "| T2 模型池管理 | JSON 配置 | 创建/读取/校验 | 不覆盖已有配置，不保存真实密钥 |",
+            "| T3 健康检查 | 模型池 | model-health.md/json | config_required、low_confidence、standard、heavy_discussion 可验证 |",
+            "| T4 诊断规则 | 健康结果 | 错误码和修复建议 | MODEL_CONFIG_MISSING 等错误码有测试 |",
+            "| T5 工作流接入 | 健康结果 | ConfigRequired stop 或进入机会分析 | 空配置不生成证据墙或 PRD |",
+            "",
+            "## 19. 7 天验证计划",
+            "",
+            "| 假设 | 实验动作 | 通过标准 | 停止标准 |",
+            "|---|---|---|---|",
+            "| 新用户愿意先配置模型 Agent | 找 10 个用户按向导接入 1 个模型 | 6 个用户 15 分钟内完成 | 少于 3 个完成 |",
+            "| 配置诊断能节省时间 | 对比手动排错和 doctor 输出 | 平均节省 30 分钟 | 用户仍需大量人工解释 |",
+            "| 用户愿意为深度护航付费 | 提供安装陪跑或团队模板报价 | 2 个付费或预约 | 只有免费咨询意向 |",
+            "",
+            "## 20. 风险、反证与停止条件",
+            "",
+            "| reverse_id | 风险 | 回应 | 停止条件 |",
+            "|---|---|---|---|",
+        ]
+    )
+    for item in reverse_items:
+        lines.append(f"| {item['reverse_id']} | {item['labels']} | {item['response']} | {item['conclusion']} 持续扩大且无法回应 |")
+
+    lines.extend(
+        [
+            "",
+            "## 21. AI 开发者交接说明",
+            "",
+            "- 先做 T1、T2、T3：首次向导、模型池管理、健康检查；再做诊断规则和工作流接入。",
+            "- 不能重解释的事实：候选 CLI 不计入可用模型，Codex 不计入外部模型，真实密钥不得写入配置。",
+            "- 可自由优化：欢迎页排版、错误提示措辞、模型标签默认值。",
+            "- 未知项：用户最常接入的模型、CLI 命令差异、不同系统的密钥管理偏好。",
+            "- 第一版验证：用空配置、缺密钥、mock CLI、真实 CLI 四类场景跑通。",
+            "- 不允许扩展：账号绕过、接码、代存密钥、私密社区抓取。",
+            "- 生成代码前必须确认：配置路径、密钥边界、错误码、健康检查输出和停止线没有缺口。",
+            "",
+            "## Gate 结果",
+            "",
+            "| Gate | 结果 | 证据 | 处理 |",
+            "|---|---|---|---|",
+        ]
+    )
+    for gate in gates:
+        lines.append(f"| {gate['gate']} | {gate['result']} | {gate['evidence']} | {gate['action']} |")
+
+    lines.extend(
+        [
+            "",
+            "## 验收剧本",
+            "",
+            f"1. 空模型池运行 doctor 后，只输出配置向导，并能追溯到 {p0_evidence[0]['evidence_id']} 的安装配置痛点。",
+            f"2. 缺少密钥时输出 MODEL_SECRET_MISSING，不打印真实密钥，并能追溯到 {p0_evidence[1]['evidence_id']} 的模型接入痛点。",
+            f"3. mock CLI 通过健康检查后，工作流从 config_required 解锁到 low_confidence，并能追溯到 {p0_evidence[2]['evidence_id']} 的配置护航痛点。",
+        ]
+    )
+    return "\n".join(lines)
+
+
 def build_commercial_prd(
     idea: str,
     intent: dict[str, str],
@@ -550,6 +1064,9 @@ def build_commercial_prd(
     reverse_items: list[dict[str, str]],
     gates: list[dict[str, str]],
 ) -> str:
+    if is_model_setup_opportunity(idea):
+        return build_model_setup_prd(idea, intent, evidence, reverse_items, gates)
+
     p0_evidence = evidence[:3]
     evidence_refs = ", ".join(item["evidence_id"] for item in evidence[:5])
 
@@ -855,7 +1372,7 @@ def run_workflow(args: argparse.Namespace) -> dict[str, Any]:
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    model_config_path = Path(args.model_config)
+    model_config_path = resolve_model_config(args.model_config)
     sources_path = Path(args.sources)
     reverse_sources_path = Path(args.reverse_sources or args.sources)
 
@@ -880,6 +1397,9 @@ def run_workflow(args: argparse.Namespace) -> dict[str, Any]:
         evidence,
         ["evidence_id", "platform", "date", "url", "quote", "behavior_signal", "commercial_signal", "level"],
     )
+    pain_clusters = cluster_pain_points(evidence)
+    write_text(output_dir / "pain-clusters.md", build_pain_clusters_markdown(args.idea, pain_clusters))
+    write_json(output_dir / "pain-clusters.json", {"idea": args.idea, "clusters": pain_clusters})
 
     reverse_sources = scan_reverse_evidence.parse_sources(reverse_sources_path)
     reverse_items = scan_reverse_evidence.scan_sources(reverse_sources, args.timeout)
@@ -908,6 +1428,12 @@ def run_workflow(args: argparse.Namespace) -> dict[str, Any]:
     raw_sample_count = estimate_raw_sample_count(forward_sources, args.timeout)
     intent = infer_intent(args.idea)
     gates, decision = build_gate_rows(mode, intent, evidence_payload["stats"], reverse_payload["stats"], raw_sample_count)
+    overbroad = is_overbroad_opportunity(decision, pain_clusters)
+    if overbroad:
+        decision = "Watch"
+        gates[-1]["result"] = "待补"
+        gates[-1]["evidence"] = f"原命题包含 {len(pain_clusters)} 个痛点簇，不能直接包装成 PRD"
+        gates[-1]["action"] = "先选择一个证据最集中的切口重新跑 Gate"
     assessment = build_assessment(
         args.idea,
         mode,
@@ -925,9 +1451,37 @@ def run_workflow(args: argparse.Namespace) -> dict[str, Any]:
     final_idea = args.idea
     final_gates = gates
     final_decision = decision
+    final_intent = intent
+    final_evidence = evidence
+    cut: dict[str, Any] | None = None
+    cut_decision = ""
+    if should_run_cut_loop(decision, pain_clusters):
+        cut = pain_clusters[0]
+        cut_evidence = selected_cut_evidence(evidence, cut)
+        cut_stats = cut_evidence_stats(cut)
+        cut_reverse = cut_reverse_stats(reverse_payload["stats"], cut)
+        cut_intent_value = cut_intent(cut)
+        cut_gates, cut_decision = build_gate_rows(
+            mode,
+            cut_intent_value,
+            cut_stats,
+            cut_reverse,
+            max(len(cut_evidence), 1),
+        )
+        write_text(
+            output_dir / "cut-to-go-assessment.md",
+            cut_loop_markdown(decision, cut, cut_gates, cut_decision),
+        )
+        if cut_decision == "Go":
+            final_idea = f"{args.idea}（收窄切口：{cut['title']}）"
+            final_gates = cut_gates
+            final_decision = cut_decision
+            final_intent = cut_intent_value
+            final_evidence = cut_evidence
+
     pivot_cut: dict[str, Any] | None = None
     pivot_decision = ""
-    if should_run_pivot_loop(decision, evidence_payload["stats"], reverse_payload["stats"]):
+    if final_decision != "Go" and should_run_pivot_loop(decision, evidence_payload["stats"], reverse_payload["stats"]):
         pivot_cut = build_pivot_cut(args.idea, reverse_items)
         pivot_reverse_stats = mitigated_reverse_stats(reverse_payload["stats"], pivot_cut)
         pivot_gates, pivot_decision = build_gate_rows(
@@ -950,7 +1504,7 @@ def run_workflow(args: argparse.Namespace) -> dict[str, Any]:
     prd_valid = False
     prd_errors: list[str] = []
     if final_decision == "Go":
-        prd = build_commercial_prd(final_idea, intent, evidence, reverse_items, final_gates)
+        prd = build_commercial_prd(final_idea, final_intent, final_evidence, reverse_items, final_gates)
         write_text(prd_path, prd)
         prd_valid, prd_errors = validate_generated_prd(prd_path)
 
@@ -964,6 +1518,11 @@ def run_workflow(args: argparse.Namespace) -> dict[str, Any]:
         "evidence_count": evidence_payload["stats"]["evidence_count"],
         "reverse_count": reverse_payload["stats"]["reverse_count"],
         "commercial_signal_count": evidence_payload["stats"]["commercial_signal_count"],
+        "pain_cluster_count": len(pain_clusters),
+        "overbroad": overbroad,
+        "cut_loop": cut is not None,
+        "cut_decision": cut_decision,
+        "selected_cut": cut,
         "pivot_loop": pivot_cut is not None,
         "pivot_decision": pivot_decision,
         "pivot_cut": pivot_cut,
@@ -989,8 +1548,10 @@ def to_summary_markdown(summary: dict[str, Any], gates: list[dict[str, str]]) ->
         f"- 正向证据数：{summary['evidence_count']}",
         f"- 反向证据数：{summary['reverse_count']}",
         f"- 商业信号数：{summary['commercial_signal_count']}",
+        f"- 痛点簇数：{summary.get('pain_cluster_count', 0)}",
         f"- 是否生成 PRD：{'是' if summary['prd_generated'] else '否'}",
         f"- PRD 校验：{'通过' if summary['prd_valid'] else '未通过或未生成'}",
+        f"- 是否触发 Cut-to-Go：{'是' if summary.get('cut_loop') else '否'}",
         f"- 是否触发 Pivot-to-Go：{'是' if summary.get('pivot_loop') else '否'}",
         "",
         "## Gate 摘要",
@@ -1021,6 +1582,17 @@ def to_summary_markdown(summary: dict[str, Any], gates: list[dict[str, str]]) ->
                 "- 输出：`pivot-to-go-assessment.md`",
             ]
         )
+    if summary.get("cut_loop") and summary.get("selected_cut"):
+        lines.extend(
+            [
+                "",
+                "## Cut-to-Go",
+                "",
+                f"- 推荐切口：{summary['selected_cut']['title']}",
+                f"- 二次结论：{summary.get('cut_decision')}",
+                "- 输出：`pain-clusters.md`、`cut-to-go-assessment.md`",
+            ]
+        )
     if summary["prd_errors"]:
         lines.extend(["", "## PRD 校验错误", ""])
         lines.extend(f"- {error}" for error in summary["prd_errors"])
@@ -1030,7 +1602,7 @@ def to_summary_markdown(summary: dict[str, Any], gates: list[dict[str, str]]) ->
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description="Run the full opportunity discovery to PRD workflow.")
     parser.add_argument("--idea", required=True, help="Product idea or opportunity hypothesis.")
-    parser.add_argument("--model-config", default=str(DEFAULT_MODEL_CONFIG), help="Model pool JSON config.")
+    parser.add_argument("--model-config", help="Model pool JSON config. Defaults to BLCAPTAIN_MODEL_POOL, then user config, then the empty template.")
     parser.add_argument("--sources", default=str(DEFAULT_SOURCES), help="Positive evidence sources JSON.")
     parser.add_argument("--reverse-sources", help="Reverse evidence sources JSON. Defaults to --sources.")
     parser.add_argument("--output-dir", default=str(RUN_DIR), help="Directory for generated workflow artifacts.")

@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "sources": [
+    {
+      "id": "COD-P-001",
+      "platform": "Codex 宽泛痛点样本",
+      "type": "file",
+      "url": "tests/fixtures/community-codex-broad-pains.md"
+    }
+  ]
+}

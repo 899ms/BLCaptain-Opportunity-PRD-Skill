@@ -7,11 +7,32 @@
 ![Python](https://img.shields.io/badge/Python-%3E%3D3.10-2b2622.svg)
 ![Agent Skill](https://img.shields.io/badge/Agent-Skill-d98e3a.svg)
 ![Evidence Based](https://img.shields.io/badge/PRD-Evidence--Based-2f5ea7.svg)
-[![Release](https://img.shields.io/github/v/release/dososo/BLCaptain-Opportunity-PRD-Skill?label=Release)](https://github.com/dososo/BLCaptain-Opportunity-PRD-Skill/releases/tag/v1.2.6)
+[![Release](https://img.shields.io/github/v/release/dososo/BLCaptain-Opportunity-PRD-Skill?label=Release)](https://github.com/dososo/BLCaptain-Opportunity-PRD-Skill/releases/tag/v1.2.7)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 > **安装**：对支持 Skill 的 Agent 说：  
 > 「帮我安装 **BLCaptain Opportunity PRD Skill**：仓库 `github.com/dososo/BLCaptain-Opportunity-PRD-Skill`」
+
+---
+
+## 首次使用先做这一步
+
+安装后先让 Codex 检查模型 Agent 配置。你可以直接说：
+
+```text
+使用 BLCaptain Opportunity PRD Skill，先帮我检查模型配置。
+如果还没有模型池，请告诉我支持哪些模型 Agent，并引导我接入 DeepSeek / GLM / Claude CLI / Gemini / Grok / 本地模型。
+```
+
+Skill 应该先展示：
+
+- 支持的模型 Agent：OpenAI-compatible、CLI Agent、本地模型、代码或原型 Agent。
+- 推荐配置路径：`~/.config/blcaptain-opportunity-prd/model-pool.json`。
+- 最简单接入方式：直接告诉 Codex“帮我接入某个模型”。
+- 密钥安全规则：真实 API Key 不写进 JSON，不提交到 Git，只写环境变量名或使用本机 CLI 登录态。
+- 健康检查命令：`python3 scripts/setup_model_pool.py --doctor`。
+
+没有可用外部模型时，Skill 只输出配置引导，不进入社区扫描、Gate 或 PRD 生成。
 
 ---
 

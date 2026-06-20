@@ -33,7 +33,9 @@ python3 scripts/run_opportunity_workflow.py \
 | `model-discussion.md/json` | 动态分工、讨论任务、可选模型输出 |
 | `evidence-report.md/json/csv` | 正向社区证据墙 |
 | `reverse-evidence-report.md/json/csv` | 反向证据墙 |
+| `pain-clusters.md/json` | 痛点簇、证据集中度和候选最小切口 |
 | `opportunity-assessment.md` | 机会评估报告 |
+| `cut-to-go-assessment.md` | 原命题 Watch/Pivot 但存在集中痛点簇时的 Cut-to-Go 二次 Gate |
 | `pivot-to-go-assessment.md` | 原切口 Pivot 时的新切口和二次 Gate |
 | `commercial-opportunity-prd.md` | 仅 Go 时生成 |
 | `workflow-summary.md/json` | 本轮结果摘要 |
@@ -44,6 +46,7 @@ python3 scripts/run_opportunity_workflow.py \
 - 意图严重缺失或有效证据少于 3 条：No-Go。
 - 证据不足、可信度低或商业信号为 0：Watch。
 - 正向证据成立但存在高风险反证：Pivot，必须尝试重新定义更小切口。
+- Cut-to-Go：如果原命题过宽或初始结论是 Watch/Pivot，但评论证据已经集中到一个痛点簇，且该痛点簇有足够证据、平台覆盖和商业信号，则选择最小切口重新跑 G0 到 G8。
 - Pivot-to-Go：如果反证可通过合规、成本、配置、ICP 或交付边界回应，则用同一批 evidence_id 和 reverse_id 重新跑 Gate。
 - G0 到 G7 通过且 G8 可交接：Go，并生成商业化机会 PRD。
 

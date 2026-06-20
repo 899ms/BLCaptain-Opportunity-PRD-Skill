@@ -1,5 +1,31 @@
 # Changelog
 
+## v1.2.7
+
+### Added
+
+- Added first-run model Agent onboarding with supported Agent types, safe local config path, and health-check guidance.
+- Added `scripts/setup_model_pool.py` for `--doctor` and `--init` model-pool bootstrap flows.
+- Added model Agent catalog and first-run onboarding references.
+- Added pain-cluster analysis and Cut-to-Go reassessment for broad Watch/Pivot opportunities.
+- Added Codex broad-pain fixtures to verify that a broad community signal can be narrowed into a model-setup opportunity PRD.
+
+### Changed
+
+- Updated the Skill entry flow so model-pool Bootstrap is visible before community evidence analysis.
+- Updated Watch/Pivot handling to explain why no PRD is generated, then attempt a narrower Cut-to-Go when evidence supports it.
+- Updated Chinese and English READMEs to surface first-run model Agent setup at the top.
+- Updated validation and simulation scripts to fail if first-run onboarding or Cut-to-Go coverage disappears.
+
+### Verified
+
+- `python3 -m py_compile scripts/*.py`
+- `python3 scripts/quick_validate.py`
+- `python3 scripts/simulate_user_flow.py`
+- `python3 scripts/setup_model_pool.py --doctor --config tests/runs/new-user-model-pool.json`
+- Codex broad-pain Cut-to-Go workflow generates and validates a commercial + engineering PRD
+- Sensitive information and unrelated reference-trace audit
+
 ## v1.2.6
 
 ### Added

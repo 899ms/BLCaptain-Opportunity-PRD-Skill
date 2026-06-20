@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "sources": [
+    {
+      "id": "COD-R-001",
+      "platform": "Codex 反向证据样本",
+      "type": "file",
+      "url": "tests/fixtures/community-codex-reverse.md"
+    }
+  ]
+}

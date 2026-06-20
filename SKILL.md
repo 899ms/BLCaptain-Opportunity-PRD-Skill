@@ -11,6 +11,7 @@ description: |
 ## 运行原则
 
 - 始终中文优先输出，除非用户明确要求英文。
+- 首次运行必须先展示模型 Agent 配置入口：支持哪些模型、推荐本地配置路径、密钥安全规则、健康检查命令，以及“直接让 Codex 帮我接入某个模型”的最短路径。
 - 始终先确认 skill 自己的模型能力池状态：无可用外部模型时只输出配置引导并停止机会分析；一个外部模型时标注单模型低置信度；两个及以上外部模型时动态分工。
 - 始终由 Codex 主持：Codex 负责拆任务、分配模型视角、处理冲突、写文件、跑校验和交接实现。
 - Codex 主持能力不等于外部模型能力；`codex_builtin` 只用于说明主持可用，不计入外部模型通过数。
@@ -25,19 +26,21 @@ description: |
 
 ## 快速流程
 
-1. 读取模型配置状态。需要配置时，使用 `references/model-config-guide.md`；需要真实健康检查时运行 `scripts/check_model_pool.py`，规则见 `references/model-health-check.md`。
-2. 如果用户要接入模型，先按 `references/model-config-guide.md` 的“Codex 代配优先”流程收集模型名、调用方式、环境变量名或 CLI 命令，更新本地配置并跑健康检查。
-3. 根据可用外部模型生成动态角色表。使用 `references/model-assignment.md`。
-4. 把用户输入拆成意图卡：目标用户、场景、核心动作、替代方案、商业假设、未知项。
-5. 做平台路由和关键词计划。使用 `references/platform-routing.md` 和 `references/community-platform-catalog.md`；需要扫描公开 URL、本地样本或目录时运行 `scripts/scan_community_evidence.py`，规则见 `references/community-evidence-scan.md`。
-6. 建立证据墙和反向证据墙。使用 `references/evidence-rules.md`；需要扫描反向证据时运行 `scripts/scan_reverse_evidence.py`。
-7. 选择最小方法论组合。使用 `references/methodology-router.md`。
-8. 按 G0 到 G8 运行 Gate。使用 `references/workflow-gates.md`。
-9. 如果原切口是 Pivot，先重定义新切口并执行 Pivot-to-Go 二次 Gate；新切口 Go 后才进入 PRD。
-10. 输出机会评估报告；只有最终 Go 时继续输出商业化机会 + 工程实施 PRD。使用 `references/commercial-prd-contract.md`。
-11. 需要真实 URL、用户导出样本或真实模型配置演练时，运行 `scripts/prepare_real_run.py`，规则见 `references/real-run-playbook.md`。
-12. 需要端到端执行时，运行 `scripts/run_opportunity_workflow.py`，规则见 `references/workflow-orchestration.md`。
-13. 生成或检查文件时，运行 `scripts/quick_validate.py` 或 `scripts/validate_opportunity_prd.py`。
+1. 首次运行先执行模型池 Bootstrap。使用 `references/first-run-onboarding.md` 和 `references/model-agent-catalog.md`；需要展示欢迎页时使用 `templates/model-setup-welcome.md`，需要创建或诊断本地模型池时运行 `scripts/setup_model_pool.py`。
+2. 读取模型配置状态。需要配置时，使用 `references/model-config-guide.md`；需要真实健康检查时运行 `scripts/check_model_pool.py`，规则见 `references/model-health-check.md`。
+3. 如果用户要接入模型，先按 `references/model-config-guide.md` 的“Codex 代配优先”流程收集模型名、调用方式、环境变量名或 CLI 命令，更新本地配置并跑健康检查。
+4. 根据可用外部模型生成动态角色表。使用 `references/model-assignment.md`。
+5. 把用户输入拆成意图卡：目标用户、场景、核心动作、替代方案、商业假设、未知项。
+6. 做平台路由和关键词计划。使用 `references/platform-routing.md` 和 `references/community-platform-catalog.md`；需要扫描公开 URL、本地样本或目录时运行 `scripts/scan_community_evidence.py`，规则见 `references/community-evidence-scan.md`。
+7. 建立证据墙和反向证据墙。使用 `references/evidence-rules.md`；需要扫描反向证据时运行 `scripts/scan_reverse_evidence.py`。
+8. 聚类痛点簇并生成候选切口。宽泛命题不能直接包装成 PRD，必须先选择证据最集中、商业信号最明确、反向风险可回应的最小切口。
+9. 选择最小方法论组合。使用 `references/methodology-router.md`。
+10. 按 G0 到 G8 运行 Gate。使用 `references/workflow-gates.md`。
+11. 如果原切口是 Watch 或 Pivot，但证据集中在具体痛点簇，先执行 Cut-to-Go 二次 Gate；如果原切口是 Pivot，先重定义新切口并执行 Pivot-to-Go 二次 Gate；新切口 Go 后才进入 PRD。
+12. 输出机会评估报告；只有最终 Go 时继续输出商业化机会 + 工程实施 PRD。使用 `references/commercial-prd-contract.md`。
+13. 需要真实 URL、用户导出样本或真实模型配置演练时，运行 `scripts/prepare_real_run.py`，规则见 `references/real-run-playbook.md`。
+14. 需要端到端执行时，运行 `scripts/run_opportunity_workflow.py`，规则见 `references/workflow-orchestration.md`。
+15. 生成或检查文件时，运行 `scripts/quick_validate.py` 或 `scripts/validate_opportunity_prd.py`。
 
 ## 八步工作法
 
@@ -56,20 +59,24 @@ description: |
 按需要输出以下资产，不要跳过 Gate：
 
 1. 模型配置状态
-2. 动态模型分工
-3. 意图卡
-4. 平台路由和搜索式
-5. 评论证据墙
-6. 反向证据墙
-7. 方法论选择和结论
-8. Gate 结果
-9. 机会评估报告
-10. 7 天关键假设实验
-11. 商业化机会 + 工程实施 PRD，仅限 Go
+2. 首次配置欢迎页和模型 Agent 清单，仅在需要配置时输出
+3. 动态模型分工
+4. 意图卡
+5. 平台路由和搜索式
+6. 评论证据墙
+7. 反向证据墙
+8. 痛点簇和候选切口
+9. 方法论选择和结论
+10. Gate 结果
+11. Watch/Pivot 时的 Cut-to-Go 或 Pivot-to-Go 评估
+12. 机会评估报告
+13. 7 天关键假设实验
+14. 商业化机会 + 工程实施 PRD，仅限 Go
 
 ## 模板
 
 - `templates/model-config-status.md`
+- `templates/model-setup-welcome.md`
 - `templates/intent-card.md`
 - `templates/evidence-pack.md`
 - `templates/opportunity-assessment-report.md`
@@ -86,6 +93,7 @@ python3 scripts/quick_validate.py
 模型健康检查：
 
 ```bash
+python3 scripts/setup_model_pool.py --doctor
 python3 scripts/check_model_pool.py --config templates/model-pool.example.json
 ```
 
@@ -135,6 +143,6 @@ python3 scripts/validate_opportunity_prd.py path/to/report.md
 
 - 无可用外部模型：只输出配置引导；Codex 只主持低置信度初筛，不声称完成多模型讨论。
 - 有效证据少于 3 条：输出证据不足报告。
-- 没有商业信号：输出 Watch，不生成商业化机会 + 工程实施 PRD。
-- 反向证据无法回应：输出 Pivot 或 No-Go；若反证可被新切口回应，先跑 Pivot-to-Go，再决定是否生成 PRD。
+- 没有商业信号：输出 Watch，不生成商业化机会 + 工程实施 PRD；如果某个痛点簇商业信号明确，先跑 Cut-to-Go。
+- 反向证据无法回应：输出 Pivot 或 No-Go；若反证可被更小切口回应，先跑 Cut-to-Go 或 Pivot-to-Go，再决定是否生成 PRD。
 - 任一 P0 功能没有 evidence_id：修复 PRD 或删除该功能。
