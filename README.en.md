@@ -7,7 +7,7 @@
 ![Python](https://img.shields.io/badge/Python-%3E%3D3.10-2b2622.svg)
 ![Agent Skill](https://img.shields.io/badge/Agent-Skill-d98e3a.svg)
 ![Evidence Based](https://img.shields.io/badge/PRD-Evidence--Based-2f5ea7.svg)
-[![Release](https://img.shields.io/github/v/release/dososo/BLCaptain-Opportunity-PRD-Skill?label=Release)](https://github.com/dososo/BLCaptain-Opportunity-PRD-Skill/releases/tag/v1.2.8)
+[![Release](https://img.shields.io/github/v/release/dososo/BLCaptain-Opportunity-PRD-Skill?label=Release)](https://github.com/dososo/BLCaptain-Opportunity-PRD-Skill/releases/tag/v1.2.9)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ## First Run
@@ -159,6 +159,8 @@ Health check:
 python3 scripts/check_model_pool.py --config my-model-pool.json
 python3 scripts/check_model_pool.py --config my-model-pool.json --json-output model-health.json
 ```
+
+The health check does not treat HTTP 200 as enough. OpenAI-compatible models must return final `content` that can be used in discussion. If a model only returns `reasoning_content`, the Skill fails the check and tells the user to disable thinking or increase `max_tokens`.
 
 Status meanings:
 

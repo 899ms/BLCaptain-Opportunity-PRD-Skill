@@ -27,17 +27,21 @@ PROVIDER_PRESETS: dict[str, dict[str, Any]] = {
         "id": "deepseek-main",
         "display_name": "DeepSeek",
         "base_url": "https://api.deepseek.com",
-        "model": "deepseek-chat",
+        "model": "deepseek-v4-pro",
         "env": "DEEPSEEK_API_KEY",
         "capability_tags": ["general", "structure", "commercial_reverse"],
+        "max_tokens": 1536,
+        "extra_body": {"thinking": {"type": "disabled"}},
     },
     "glm": {
         "id": "glm-main",
         "display_name": "GLM",
-        "base_url": "https://open.bigmodel.cn/api/paas/v4",
-        "model": "glm-5.2",
+        "base_url": "https://open.bigmodel.cn/api/coding/paas/v4",
+        "model": "GLM-5.2",
         "env": "GLM_API_KEY",
         "capability_tags": ["long_context", "structure", "chinese_context"],
+        "max_tokens": 1536,
+        "extra_body": {"thinking": {"type": "disabled"}},
     },
     "gemini": {
         "id": "gemini-main",
@@ -46,6 +50,8 @@ PROVIDER_PRESETS: dict[str, dict[str, Any]] = {
         "model": "gemini-3.5-flash",
         "env": "GEMINI_API_KEY",
         "capability_tags": ["external_trend", "general", "multimodal"],
+        "max_tokens": 1536,
+        "extra_body": {"thinking": {"type": "disabled"}},
     },
     "grok": {
         "id": "grok-main",
@@ -54,6 +60,8 @@ PROVIDER_PRESETS: dict[str, dict[str, Any]] = {
         "model": "grok-4.3",
         "env": "GROK_API_KEY",
         "capability_tags": ["social", "external_trend", "commercial_reverse"],
+        "max_tokens": 1536,
+        "extra_body": {"thinking": {"type": "disabled"}},
     },
 }
 
@@ -245,6 +253,8 @@ def connect_provider(args: argparse.Namespace) -> str:
         "secret_ref": secret_ref,
         "capability_tags": preset["capability_tags"],
         "test_prompt": "ping",
+        "max_tokens": args.max_tokens or preset.get("max_tokens", 1536),
+        "extra_body": preset.get("extra_body", {}),
     }
 
     if args.keep_env_alias:
@@ -333,6 +343,7 @@ def main(argv: list[str]) -> int:
         parser.add_argument("--api-key-env", help="Environment variable name used when --store env or as an alias.")
         parser.add_argument("--base-url", help="Override default OpenAI-compatible base URL.")
         parser.add_argument("--model", help="Override default model id.")
+        parser.add_argument("--max-tokens", type=int, help="Override max_tokens for health checks and short discussions.")
         parser.add_argument("--id", help="Override model id in model pool.")
         parser.add_argument("--display-name", help="Override display name.")
         parser.add_argument("--keep-env-alias", action="store_true", help="Also keep api_key_env in the model entry as a fallback hint.")

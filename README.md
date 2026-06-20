@@ -7,7 +7,7 @@
 ![Python](https://img.shields.io/badge/Python-%3E%3D3.10-2b2622.svg)
 ![Agent Skill](https://img.shields.io/badge/Agent-Skill-d98e3a.svg)
 ![Evidence Based](https://img.shields.io/badge/PRD-Evidence--Based-2f5ea7.svg)
-[![Release](https://img.shields.io/github/v/release/dososo/BLCaptain-Opportunity-PRD-Skill?label=Release)](https://github.com/dososo/BLCaptain-Opportunity-PRD-Skill/releases/tag/v1.2.8)
+[![Release](https://img.shields.io/github/v/release/dososo/BLCaptain-Opportunity-PRD-Skill?label=Release)](https://github.com/dososo/BLCaptain-Opportunity-PRD-Skill/releases/tag/v1.2.9)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 > **安装**：对支持 Skill 的 Agent 说：  
@@ -221,6 +221,8 @@ CLI 示例：
 python3 scripts/check_model_pool.py --config my-model-pool.json
 python3 scripts/check_model_pool.py --config my-model-pool.json --json-output model-health.json
 ```
+
+健康检查不是只看接口是否返回 HTTP 200。OpenAI-compatible 模型必须返回可用于讨论的最终 `content`；如果只返回 `reasoning_content`，Skill 会判定失败，并提示关闭 thinking 或增大 `max_tokens` 后重试。
 
 检查结果含义：
 

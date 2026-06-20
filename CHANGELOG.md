@@ -1,5 +1,31 @@
 # Changelog
 
+## v1.2.9
+
+### Added
+
+- Added shared OpenAI-compatible payload construction and assistant response parsing.
+- Added strict health-check coverage for HTTP 200 responses with empty `message.content`.
+- Added simulation coverage for reasoning-only responses, empty responses, and `extra_body.thinking.disabled` payloads.
+
+### Changed
+
+- Health checks now require final `choices[0].message.content`; `reasoning_content` alone is not treated as a usable model output.
+- Updated workflow model invocation to fail clearly when a model returns no final content.
+- Updated DeepSeek and GLM connection presets with current project defaults, `max_tokens`, and disabled thinking for short review tasks.
+- Clarified README and reference docs so model setup stays inside this Skill's own model pool and avoids unrelated setup paths.
+
+### Verified
+
+- `python3 -m py_compile scripts/*.py`
+- `python3 scripts/quick_validate.py`
+- `python3 scripts/simulate_user_flow.py`
+- `python3 scripts/setup_model_pool.py connect deepseek --store auto --dry-run`
+- `python3 scripts/check_model_pool.py --config templates/model-pool.providers.example.json`
+- `python3 scripts/run_opportunity_workflow.py --idea "Codex 国内用户痛点解决方案" --model-config tests/fixtures/model-pool-cli.json --sources tests/fixtures/community-codex-broad-sources-local.json --reverse-sources tests/fixtures/community-codex-reverse-sources-local.json --output-dir tests/runs/opportunity-workflow-codex-cut --run-discussion`
+- `python3 scripts/validate_opportunity_prd.py tests/runs/opportunity-workflow-codex-cut/commercial-opportunity-prd.md`
+- Sensitive information and unrelated reference-trace audit
+
 ## v1.2.8
 
 ### Added

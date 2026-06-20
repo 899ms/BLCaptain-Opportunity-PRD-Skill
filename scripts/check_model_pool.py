@@ -169,6 +169,50 @@ def resolve_model_secret(model: dict[str, Any]) -> dict[str, str]:
     return {"value": "", "source": "none", "reason": "缺少 secret_ref 或 api_key_env"}
 
 
+def build_openai_payload(
+    model: dict[str, Any],
+    prompt: str,
+    default_max_tokens: int,
+    temperature: float,
+) -> dict[str, Any]:
+    payload = {
+        "model": model["model"],
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": int(model.get("max_tokens", default_max_tokens)),
+        "temperature": model.get("temperature", temperature),
+    }
+    extra_body = model.get("extra_body")
+    if isinstance(extra_body, dict):
+        payload.update(extra_body)
+    for key in ("thinking", "reasoning_effort", "top_p"):
+        if key in model:
+            payload[key] = model[key]
+    return payload
+
+
+def extract_assistant_text(data: dict[str, Any]) -> tuple[str, str, str]:
+    choice = (data.get("choices") or [{}])[0]
+    message = choice.get("message") or {}
+    return (
+        str(message.get("content") or "").strip(),
+        str(message.get("reasoning_content") or "").strip(),
+        str(choice.get("finish_reason") or ""),
+    )
+
+
+def empty_content_failure(reasoning_content: str, finish_reason: str) -> dict[str, Any]:
+    if reasoning_content:
+        reason = "HTTP 200 但没有最终 content，仅返回 reasoning_content；请关闭 thinking 或增大 max_tokens"
+        if finish_reason:
+            reason += f"，finish_reason={finish_reason}"
+        return {"health": "failed", "reason": reason}
+
+    reason = "HTTP 200 但 message.content 为空，模型没有返回可用于多 Agent 讨论的最终文本"
+    if finish_reason:
+        reason += f"，finish_reason={finish_reason}"
+    return {"health": "failed", "reason": reason}
+
+
 def is_placeholder(value: Any) -> bool:
     if not isinstance(value, str):
         return False
@@ -222,12 +266,7 @@ def check_openai_compatible(model: dict[str, Any], timeout: int) -> dict[str, An
     if not api_key:
         return {"health": "missing_secret", "reason": secret.get("reason", "未找到 API Key"), "secret_source": secret.get("source", "")}
 
-    payload = {
-        "model": model_name,
-        "messages": [{"role": "user", "content": model.get("test_prompt", "ping")}],
-        "max_tokens": int(model.get("max_tokens", 8)),
-        "temperature": 0,
-    }
+    payload = build_openai_payload(model, model.get("test_prompt", "ping"), 64, 0)
     body = json.dumps(payload).encode("utf-8")
     request = urllib.request.Request(
         f"{base_url}/chat/completions",
@@ -243,16 +282,28 @@ def check_openai_compatible(model: dict[str, Any], timeout: int) -> dict[str, An
     start = time.time()
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
-            response.read(2048)
+            raw_body = response.read(200_000).decode("utf-8", errors="replace")
+            data = json.loads(raw_body)
     except urllib.error.HTTPError as exc:
         return {"health": "failed", "reason": f"http {exc.code}", "secret_source": secret.get("source", "")}
     except urllib.error.URLError as exc:
         return {"health": "failed", "reason": str(exc.reason)[:160], "secret_source": secret.get("source", "")}
     except TimeoutError:
         return {"health": "failed", "reason": f"timeout>{timeout}s", "secret_source": secret.get("source", "")}
+    except json.JSONDecodeError:
+        return {"health": "failed", "reason": "HTTP 200 但响应不是可解析 JSON", "secret_source": secret.get("source", "")}
 
     elapsed_ms = int((time.time() - start) * 1000)
-    return {"health": "ok", "reason": "chat completions 已返回", "latency_ms": elapsed_ms, "secret_source": secret.get("source", "")}
+    content, reasoning_content, finish_reason = extract_assistant_text(data)
+    if not content:
+        result = empty_content_failure(reasoning_content, finish_reason)
+        return {**result, "latency_ms": elapsed_ms, "secret_source": secret.get("source", "")}
+    return {
+        "health": "ok",
+        "reason": "chat completions 已返回最终 content",
+        "latency_ms": elapsed_ms,
+        "secret_source": secret.get("source", ""),
+    }
 
 
 def check_model(model: dict[str, Any], timeout: int) -> dict[str, Any]:

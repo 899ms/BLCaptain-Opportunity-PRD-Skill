@@ -59,6 +59,9 @@ python3 scripts/check_model_pool.py \
 - 占位 base_url、model 或 command 输出 `missing_config`，引导用户补配置，不执行占位命令。
 - 缺少密钥时输出 `missing_secret`，并提示使用 `setup_model_pool.py connect <model> --store auto --prompt-key`，不得伪装成功。
 - CLI 命令由用户本地环境负责权限和密钥管理。
+- OpenAI-compatible 健康通过不等于 HTTP 200。必须满足：HTTP 200、响应 JSON 可解析，并且 `choices[0].message.content` 非空。
+- 仅返回 `reasoning_content` 不计为通过，因为它不能作为多模型讨论的最终回答。此时提示用户关闭 thinking 或增大 `max_tokens`。
+- 思考型模型做短审查、机会判断和结构审查时，默认关闭 thinking 并设置足够的 `max_tokens`；只有长程 coding 或明确需要深度推理时才显式开启 thinking。
 
 ## 候选发现
 

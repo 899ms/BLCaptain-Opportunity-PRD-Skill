@@ -216,12 +216,7 @@ def invoke_openai_compatible(model: dict[str, Any], prompt: str, timeout: int) -
     if not api_key:
         return f"未调用：{secret.get('reason', '未找到 API Key')}"
 
-    payload = {
-        "model": model["model"],
-        "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": int(model.get("max_tokens", 512)),
-        "temperature": 0.2,
-    }
+    payload = check_model_pool.build_openai_payload(model, prompt, 512, 0.2)
     request = urllib.request.Request(
         f"{str(model['base_url']).rstrip('/')}/chat/completions",
         data=json.dumps(payload).encode("utf-8"),
@@ -238,7 +233,13 @@ def invoke_openai_compatible(model: dict[str, Any], prompt: str, timeout: int) -
     except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
         return f"调用失败：{str(exc)[:200]}"
 
-    return data.get("choices", [{}])[0].get("message", {}).get("content", "").strip() or "调用成功但无内容"
+    content, reasoning_content, finish_reason = check_model_pool.extract_assistant_text(data)
+    if not content:
+        suffix = f"，finish_reason={finish_reason}" if finish_reason else ""
+        if reasoning_content:
+            return f"调用成功但无最终 content：仅返回 reasoning_content{suffix}。请关闭 thinking 或增大 max_tokens。"
+        return f"调用成功但无最终 content{suffix}。请检查模型输出预算或响应格式。"
+    return content
 
 
 def run_discussion(

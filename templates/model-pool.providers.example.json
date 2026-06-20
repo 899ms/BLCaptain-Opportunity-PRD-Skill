@@ -6,34 +6,47 @@
     "真实密钥建议放在系统安全凭据：macOS Keychain、Windows DPAPI、Linux Secret Service。",
     "环境变量、1Password、Bitwarden、dotenv 本地私有文件或对应模型 CLI 登录态是高级或兜底方式。",
     "CLI 模型命令由用户本机环境负责鉴权；仓库不保存 token、cookie 或账号信息。",
-    "Codex 是主持和文件生成者，不需要写进外部模型池，也不计入外部模型通过数。"
+    "Codex 是主持和文件生成者，不需要写进外部模型池，也不计入外部模型通过数。",
+    "思考型模型如果只返回 reasoning_content，应关闭 thinking 或提高 max_tokens；短审查默认关闭 thinking。"
   ],
   "models": [
     {
       "id": "deepseek-main",
       "display_name": "DeepSeek",
       "method": "openai_compatible",
-      "base_url": "填写 DeepSeek 官方 OpenAI-compatible Base URL",
-      "model": "填写 DeepSeek 模型名",
+      "base_url": "https://api.deepseek.com",
+      "model": "deepseek-v4-pro",
       "secret_ref": {
         "type": "env",
         "env": "DEEPSEEK_API_KEY"
       },
       "capability_tags": ["general", "structure", "commercial_reverse"],
-      "test_prompt": "ping"
+      "test_prompt": "ping",
+      "max_tokens": 1536,
+      "extra_body": {
+        "thinking": {
+          "type": "disabled"
+        }
+      }
     },
     {
       "id": "glm-main",
       "display_name": "GLM",
       "method": "openai_compatible",
-      "base_url": "填写 GLM 官方 OpenAI-compatible Base URL",
-      "model": "填写 GLM 模型名",
+      "base_url": "https://open.bigmodel.cn/api/coding/paas/v4",
+      "model": "GLM-5.2",
       "secret_ref": {
         "type": "env",
         "env": "GLM_API_KEY"
       },
       "capability_tags": ["long_context", "structure", "chinese_context"],
-      "test_prompt": "ping"
+      "test_prompt": "ping",
+      "max_tokens": 1536,
+      "extra_body": {
+        "thinking": {
+          "type": "disabled"
+        }
+      }
     },
     {
       "id": "gemini-main",
@@ -46,7 +59,13 @@
         "env": "GEMINI_API_KEY"
       },
       "capability_tags": ["external_trend", "general", "multimodal"],
-      "test_prompt": "ping"
+      "test_prompt": "ping",
+      "max_tokens": 1536,
+      "extra_body": {
+        "thinking": {
+          "type": "disabled"
+        }
+      }
     },
     {
       "id": "grok-main",
@@ -59,7 +78,13 @@
         "env": "GROK_API_KEY"
       },
       "capability_tags": ["social", "external_trend", "commercial_reverse"],
-      "test_prompt": "ping"
+      "test_prompt": "ping",
+      "max_tokens": 1536,
+      "extra_body": {
+        "thinking": {
+          "type": "disabled"
+        }
+      }
     },
     {
       "id": "claude-cli",

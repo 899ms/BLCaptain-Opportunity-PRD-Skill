@@ -22,6 +22,7 @@ python3 scripts/run_opportunity_workflow.py \
 - `config_required` 时立即停止，只输出模型配置引导和 `workflow-summary`，不进入社区扫描、反向扫描、讨论、Gate 或 PRD。
 - 默认不调用真实付费模型，只生成动态分工和讨论任务。
 - 只有显式传入 `--run-discussion` 时，才调用健康检查通过的 CLI 或 OpenAI-compatible 模型。
+- OpenAI-compatible 讨论输出必须有最终 `content`。仅返回 `reasoning_content` 时不写成有效讨论结论，而是提示关闭 thinking 或增大 `max_tokens`。
 - `codex_builtin` 不由脚本重复调用，也不计入外部模型通过数；Codex 始终负责主持、综合、文件生成和校验。
 - OpenAI-compatible 优先读取 `secret_ref` 指向的本机安全凭据，也兼容环境变量；不得把密钥写入输出文件。
 

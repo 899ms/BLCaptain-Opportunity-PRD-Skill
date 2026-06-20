@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import functools
 import http.server
+import os
 import re
 import json
 import subprocess
@@ -16,6 +17,62 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 RUN_DIR = ROOT / "tests" / "runs"
 REPORT_PATH = RUN_DIR / "user-flow-simulation-2026-06-19.md"
+
+
+class MockOpenAIHandler(http.server.BaseHTTPRequestHandler):
+    response_mode = "content"
+    last_payload: dict[str, object] = {}
+
+    def do_POST(self) -> None:
+        if self.path != "/chat/completions":
+            self.send_response(404)
+            self.end_headers()
+            return
+
+        length = int(self.headers.get("Content-Length", "0"))
+        raw_body = self.rfile.read(length).decode("utf-8", errors="replace")
+        try:
+            MockOpenAIHandler.last_payload = json.loads(raw_body)
+        except json.JSONDecodeError:
+            MockOpenAIHandler.last_payload = {}
+
+        if MockOpenAIHandler.response_mode == "content":
+            payload = {
+                "choices": [
+                    {
+                        "message": {"content": "pong"},
+                        "finish_reason": "stop",
+                    }
+                ]
+            }
+        elif MockOpenAIHandler.response_mode == "reasoning_only":
+            payload = {
+                "choices": [
+                    {
+                        "message": {"content": "", "reasoning_content": "内部推理已消耗输出预算"},
+                        "finish_reason": "length",
+                    }
+                ]
+            }
+        else:
+            payload = {
+                "choices": [
+                    {
+                        "message": {"content": ""},
+                        "finish_reason": "stop",
+                    }
+                ]
+            }
+
+        body = json.dumps(payload).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def log_message(self, format: str, *args: object) -> None:
+        return
 
 
 def read(relative_path: str) -> str:
@@ -134,6 +191,90 @@ def run_command(command: list[str], cwd: Path, label: str, errors: list[str]) ->
     if result.returncode != 0:
         errors.append(f"{label} 命令失败：{' '.join(command)}\n{output}")
     return output
+
+
+def write_mock_model_config(path: Path, base_url: str, env_name: str = "BLCAPTAIN_TEST_OPENAI_KEY") -> None:
+    payload = {
+        "version": "1.0",
+        "models": [
+            {
+                "id": "mock-openai",
+                "display_name": "Mock OpenAI-compatible",
+                "method": "openai_compatible",
+                "base_url": base_url,
+                "model": "mock-thinking-model",
+                "secret_ref": {"type": "env", "env": env_name},
+                "capability_tags": ["general", "structure"],
+                "test_prompt": "ping",
+                "max_tokens": 1536,
+                "extra_body": {"thinking": {"type": "disabled"}},
+            }
+        ],
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def simulate_openai_content_validation(errors: list[str]) -> str:
+    import check_model_pool
+    import run_opportunity_workflow
+
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), MockOpenAIHandler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    port = server.server_address[1]
+    config_path = RUN_DIR / "mock-openai-model-pool.json"
+    env_name = "BLCAPTAIN_TEST_OPENAI_KEY"
+    old_env = os.environ.get(env_name)
+    os.environ[env_name] = "test-key"
+
+    try:
+        write_mock_model_config(config_path, f"http://127.0.0.1:{port}", env_name)
+        model = json.loads(config_path.read_text(encoding="utf-8"))["models"][0]
+
+        MockOpenAIHandler.response_mode = "content"
+        ok_result = check_model_pool.check_model(model, 5)
+        if ok_result.get("health") != "ok":
+            errors.append(f"OpenAI-compatible content 非空时应通过：{ok_result}")
+        sent_payload = MockOpenAIHandler.last_payload
+        thinking = (sent_payload.get("thinking") or {}) if isinstance(sent_payload, dict) else {}
+        if sent_payload.get("max_tokens") != 1536 or thinking.get("type") != "disabled":
+            errors.append("OpenAI-compatible payload 未带上 max_tokens 或 thinking.disabled")
+
+        MockOpenAIHandler.response_mode = "reasoning_only"
+        reasoning_result = check_model_pool.check_model(model, 5)
+        reason = reasoning_result.get("reason", "")
+        if reasoning_result.get("health") != "failed" or "reasoning_content" not in reason or "关闭 thinking" not in reason or "增大 max_tokens" not in reason:
+            errors.append(f"仅 reasoning_content 时应失败并给出修复建议：{reasoning_result}")
+
+        MockOpenAIHandler.response_mode = "empty"
+        empty_result = check_model_pool.check_model(model, 5)
+        if empty_result.get("health") != "failed" or "message.content 为空" not in empty_result.get("reason", ""):
+            errors.append(f"空 content 且无 reasoning 时应失败：{empty_result}")
+
+        MockOpenAIHandler.response_mode = "reasoning_only"
+        workflow_output = run_opportunity_workflow.invoke_openai_compatible(model, "ping", 5)
+        if "调用成功但无最终 content" not in workflow_output or "reasoning_content" not in workflow_output:
+            errors.append(f"工作流遇到空 content 时没有明确失败：{workflow_output}")
+    finally:
+        if old_env is None:
+            os.environ.pop(env_name, None)
+        else:
+            os.environ[env_name] = old_env
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=2)
+
+    return "\n".join(
+        [
+            "# OpenAI-compatible 最终 content 校验",
+            "",
+            "- content 非空：ok",
+            "- 仅 reasoning_content：failed，并提示关闭 thinking 或增大 max_tokens",
+            "- content 为空且无 reasoning：failed",
+            "- 工作流调用：不再把空 content 当成有效讨论输出",
+        ]
+    )
 
 
 def simulate_model_health(errors: list[str]) -> str:
@@ -643,6 +784,7 @@ def build_report(errors: list[str], sections: list[tuple[str, str]]) -> str:
         "- No-Go：趋势文章无评论原话时必须拦住。",
         "- Go：客服质检样例有证据、反证、商业信号后才生成商业化机会 PRD。",
         "- 模型健康检查：CLI mock 可通过，缺密钥 OpenAI-compatible 不伪装成功。",
+        "- 模型内容健康检查：HTTP 200 但 content 为空必须失败，reasoning_content 不计为可用讨论输出。",
         "- 安全 Key 接入：connect 命令能使用系统安全凭据或环境变量兜底，配置只写 secret_ref。",
         "- Codex 主持检查：codex_builtin 只说明主持可用，不计入外部模型。",
         "- 社区证据扫描：本地社区样本能抽取 evidence_id、用户原话、行为信号和商业信号。",
@@ -676,16 +818,17 @@ def main() -> int:
         ("场景 5：Go 后生成商业化机会 PRD", validate_report_fixture("tests/fixtures/go-customer-service.md", "Go", errors)),
         ("场景 6：模型健康检查", simulate_model_health(errors)),
         ("场景 7：安全 Key 接入", simulate_secure_connect(errors)),
-        ("场景 8：Codex 主持不计入外部模型", simulate_codex_only_model_pool(errors)),
-        ("场景 9：缺密钥模型不伪装成功", simulate_missing_secret(errors)),
-        ("场景 10：新用户空模型池工作流", simulate_config_required_workflow(errors)),
-        ("场景 11：社区证据扫描", simulate_community_scan(errors)),
-        ("场景 12：批量社区扫描和结构化导出", simulate_batch_exports(errors)),
-        ("场景 13：反向证据扫描", simulate_reverse_scan(errors)),
-        ("场景 14：P3 端到端 Go 工作流", simulate_full_workflow_go(errors)),
-        ("场景 15：P3 端到端 Pivot-to-Go 工作流", simulate_full_workflow_pivot(errors)),
-        ("场景 16：Codex 宽泛痛点 Cut-to-Go 工作流", simulate_codex_cut_to_go(errors)),
-        ("场景 17：P4 真实 URL 准备和工作流", simulate_real_run_prepare(errors)),
+        ("场景 8：OpenAI-compatible 最终 content 校验", simulate_openai_content_validation(errors)),
+        ("场景 9：Codex 主持不计入外部模型", simulate_codex_only_model_pool(errors)),
+        ("场景 10：缺密钥模型不伪装成功", simulate_missing_secret(errors)),
+        ("场景 11：新用户空模型池工作流", simulate_config_required_workflow(errors)),
+        ("场景 12：社区证据扫描", simulate_community_scan(errors)),
+        ("场景 13：批量社区扫描和结构化导出", simulate_batch_exports(errors)),
+        ("场景 14：反向证据扫描", simulate_reverse_scan(errors)),
+        ("场景 15：P3 端到端 Go 工作流", simulate_full_workflow_go(errors)),
+        ("场景 16：P3 端到端 Pivot-to-Go 工作流", simulate_full_workflow_pivot(errors)),
+        ("场景 17：Codex 宽泛痛点 Cut-to-Go 工作流", simulate_codex_cut_to_go(errors)),
+        ("场景 18：P4 真实 URL 准备和工作流", simulate_real_run_prepare(errors)),
     ]
 
     RUN_DIR.mkdir(parents=True, exist_ok=True)
