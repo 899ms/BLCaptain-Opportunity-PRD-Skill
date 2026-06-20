@@ -15,7 +15,8 @@ description: |
 - 始终先确认 skill 自己的模型能力池状态：无可用外部模型时只输出配置引导并停止机会分析；一个外部模型时标注单模型低置信度；两个及以上外部模型时动态分工。
 - 始终由 Codex 主持：Codex 负责拆任务、分配模型视角、处理冲突、写文件、跑校验和交接实现。
 - Codex 主持能力不等于外部模型能力；`codex_builtin` 只用于说明主持可用，不计入外部模型通过数。
-- 当用户说“接入某个模型”“我有某个 API Key”“我有某个 CLI 命令”时，优先用引导式配置：询问最少必要信息，帮用户生成或更新本地模型配置文件，提醒密钥不要写入 JSON，然后运行健康检查；不要默认要求用户手动编辑配置文件。
+- 当用户说“接入某个模型”“我有某个 API Key”“我有某个 CLI 命令”时，优先用引导式配置：询问最少必要信息，帮用户生成或更新本地模型配置文件，API Key 模型默认用 `scripts/setup_model_pool.py connect <model> --store auto --prompt-key` 保存到本机安全凭据，然后运行健康检查；不要默认要求用户手动编辑配置文件。
+- 如果用户直接把 Key 粘贴给 Codex，必须说明终端隐藏输入更安全；若用户仍选择粘贴，立即写入本机安全凭据，不得写入 JSON、README、日志或报告。
 - 不硬编码任何固定模型职责；根据用户实际配置和能力标签分配任务。
 - 不固定社区平台；根据用户、场景、行业、竞品和问题类型动态选择平台。
 - 不把趋势、公告、观点文章、营销软文当作已验证需求。
@@ -28,7 +29,7 @@ description: |
 
 1. 首次运行先执行模型池 Bootstrap。使用 `references/first-run-onboarding.md` 和 `references/model-agent-catalog.md`；需要展示欢迎页时使用 `templates/model-setup-welcome.md`，需要创建或诊断本地模型池时运行 `scripts/setup_model_pool.py`。
 2. 读取模型配置状态。需要配置时，使用 `references/model-config-guide.md`；需要真实健康检查时运行 `scripts/check_model_pool.py`，规则见 `references/model-health-check.md`。
-3. 如果用户要接入模型，先按 `references/model-config-guide.md` 的“Codex 代配优先”流程收集模型名、调用方式、环境变量名或 CLI 命令，更新本地配置并跑健康检查。
+3. 如果用户要接入模型，先按 `references/model-config-guide.md` 的“Codex 代配优先”流程收集模型名、调用方式、Key 输入方式或 CLI 命令，更新本地配置并跑健康检查。
 4. 根据可用外部模型生成动态角色表。使用 `references/model-assignment.md`。
 5. 把用户输入拆成意图卡：目标用户、场景、核心动作、替代方案、商业假设、未知项。
 6. 做平台路由和关键词计划。使用 `references/platform-routing.md` 和 `references/community-platform-catalog.md`；需要扫描公开 URL、本地样本或目录时运行 `scripts/scan_community_evidence.py`，规则见 `references/community-evidence-scan.md`。

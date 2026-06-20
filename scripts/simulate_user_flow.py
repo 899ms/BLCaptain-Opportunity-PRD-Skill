@@ -59,7 +59,7 @@ def simulate_no_model(errors: list[str]) -> str:
 ## 最简单配置方式
 
 直接告诉 Codex：帮我接入 DeepSeek / GLM / Claude / Gemini / Grok / 本地模型。
-如果有 API Key，只告诉 Codex 环境变量名；如果有 CLI，只提供本机非交互命令。
+如果有 API Key，优先用隐藏输入保存到系统安全凭据；如果有 CLI，只提供本机非交互命令。
 Codex 会生成或更新本地模型配置，并运行健康检查。
 
 当前不进入机会分析，不生成平台路由、证据墙或商业化机会 PRD。
@@ -162,6 +162,71 @@ def simulate_model_health(errors: list[str]) -> str:
         if payload.get("external_ok_count") != 1 or "cli_candidates" not in payload:
             errors.append("模型健康检查 JSON 缺少 external_ok_count 或 cli_candidates")
     return output
+
+
+def simulate_secure_connect(errors: list[str]) -> str:
+    dry_output = run_command(
+        [
+            "python3",
+            "scripts/setup_model_pool.py",
+            "connect",
+            "deepseek",
+            "--store",
+            "auto",
+            "--dry-run",
+        ],
+        ROOT,
+        "安全 Key 接入 dry-run",
+        errors,
+    )
+    assert_contains(dry_output, ["模型接入结果", "存储方式", "真实 Key：未写入模型池 JSON"], "安全 Key 接入 dry-run", errors)
+
+    config_path = RUN_DIR / "secure-connect-model-pool.json"
+    if config_path.exists():
+        config_path.unlink()
+    env_output = run_command(
+        [
+            "python3",
+            "scripts/setup_model_pool.py",
+            "connect",
+            "deepseek",
+            "--store",
+            "env",
+            "--api-key-env",
+            "BLCAPTAIN_TEST_DEEPSEEK_KEY",
+            "--config",
+            str(config_path),
+        ],
+        ROOT,
+        "安全 Key 接入 env 兜底",
+        errors,
+    )
+    assert_contains(env_output, ["模型接入结果", "使用环境变量", "真实 Key：未写入模型池 JSON"], "安全 Key 接入 env 兜底", errors)
+    if not config_path.exists():
+        errors.append("安全 Key 接入未生成模型池配置")
+        return dry_output + "\n" + env_output
+
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    first_model = (config.get("models") or [{}])[0]
+    if first_model.get("secret_ref", {}).get("type") != "env":
+        errors.append("安全 Key 接入未写入 secret_ref env")
+    if "api_key" in json.dumps(config).lower():
+        errors.append("安全 Key 接入配置疑似写入明文 key 字段")
+
+    health_output = run_command(
+        [
+            "python3",
+            "scripts/check_model_pool.py",
+            "--config",
+            str(config_path),
+        ],
+        ROOT,
+        "安全 Key 接入健康检查",
+        errors,
+    )
+    assert_contains(health_output, ["missing_secret", "BLCAPTAIN_TEST_DEEPSEEK_KEY"], "安全 Key 接入健康检查", errors)
+    assert_not_contains(health_output, ["sk-", "Bearer "], "安全 Key 接入健康检查", errors)
+    return dry_output + "\n" + env_output + "\n" + health_output
 
 
 def simulate_codex_only_model_pool(errors: list[str]) -> str:
@@ -578,6 +643,7 @@ def build_report(errors: list[str], sections: list[tuple[str, str]]) -> str:
         "- No-Go：趋势文章无评论原话时必须拦住。",
         "- Go：客服质检样例有证据、反证、商业信号后才生成商业化机会 PRD。",
         "- 模型健康检查：CLI mock 可通过，缺密钥 OpenAI-compatible 不伪装成功。",
+        "- 安全 Key 接入：connect 命令能使用系统安全凭据或环境变量兜底，配置只写 secret_ref。",
         "- Codex 主持检查：codex_builtin 只说明主持可用，不计入外部模型。",
         "- 社区证据扫描：本地社区样本能抽取 evidence_id、用户原话、行为信号和商业信号。",
         "- 批量扫描和结构化导出：目录样本能输出 Markdown、JSON、CSV。",
@@ -609,16 +675,17 @@ def main() -> int:
         ("场景 4：No-Go 证据不足", validate_report_fixture("tests/fixtures/nogo-trend-only.md", "No-Go", errors)),
         ("场景 5：Go 后生成商业化机会 PRD", validate_report_fixture("tests/fixtures/go-customer-service.md", "Go", errors)),
         ("场景 6：模型健康检查", simulate_model_health(errors)),
-        ("场景 7：Codex 主持不计入外部模型", simulate_codex_only_model_pool(errors)),
-        ("场景 8：缺密钥模型不伪装成功", simulate_missing_secret(errors)),
-        ("场景 9：新用户空模型池工作流", simulate_config_required_workflow(errors)),
-        ("场景 10：社区证据扫描", simulate_community_scan(errors)),
-        ("场景 11：批量社区扫描和结构化导出", simulate_batch_exports(errors)),
-        ("场景 12：反向证据扫描", simulate_reverse_scan(errors)),
-        ("场景 13：P3 端到端 Go 工作流", simulate_full_workflow_go(errors)),
-        ("场景 14：P3 端到端 Pivot-to-Go 工作流", simulate_full_workflow_pivot(errors)),
-        ("场景 15：Codex 宽泛痛点 Cut-to-Go 工作流", simulate_codex_cut_to_go(errors)),
-        ("场景 16：P4 真实 URL 准备和工作流", simulate_real_run_prepare(errors)),
+        ("场景 7：安全 Key 接入", simulate_secure_connect(errors)),
+        ("场景 8：Codex 主持不计入外部模型", simulate_codex_only_model_pool(errors)),
+        ("场景 9：缺密钥模型不伪装成功", simulate_missing_secret(errors)),
+        ("场景 10：新用户空模型池工作流", simulate_config_required_workflow(errors)),
+        ("场景 11：社区证据扫描", simulate_community_scan(errors)),
+        ("场景 12：批量社区扫描和结构化导出", simulate_batch_exports(errors)),
+        ("场景 13：反向证据扫描", simulate_reverse_scan(errors)),
+        ("场景 14：P3 端到端 Go 工作流", simulate_full_workflow_go(errors)),
+        ("场景 15：P3 端到端 Pivot-to-Go 工作流", simulate_full_workflow_pivot(errors)),
+        ("场景 16：Codex 宽泛痛点 Cut-to-Go 工作流", simulate_codex_cut_to_go(errors)),
+        ("场景 17：P4 真实 URL 准备和工作流", simulate_real_run_prepare(errors)),
     ]
 
     RUN_DIR.mkdir(parents=True, exist_ok=True)

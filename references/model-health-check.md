@@ -6,14 +6,14 @@
 
 ## 配置格式
 
-优先让 Codex 帮用户生成或更新本地模型配置文件。用户只需要说“帮我接入 DeepSeek，我想用环境变量 `DEEPSEEK_API_KEY`”或“帮我接入 Claude CLI，命令是 `claude -p`”。手动配置时使用 JSON：默认 `templates/model-pool.example.json` 是空模型池，新用户可参考 `templates/model-pool.providers.example.json`。
+优先让 Codex 帮用户生成或更新本地模型配置文件。用户只需要说“帮我接入 DeepSeek”或“帮我接入 Claude CLI，命令是 `claude -p`”。手动配置时使用 JSON：默认 `templates/model-pool.example.json` 是空模型池，新用户可参考 `templates/model-pool.providers.example.json`。
 
 支持三种方法：
 
 | method | 用途 | 是否需要密钥 |
 |---|---|---|
 | cli | 本地模型、第三方 CLI、包装脚本 | 由用户本地命令自行处理 |
-| openai_compatible | OpenAI-compatible `/chat/completions` API | 只写环境变量名，不写密钥 |
+| openai_compatible | OpenAI-compatible `/chat/completions` API | 优先写 `secret_ref`，不写真实密钥 |
 | codex_builtin | Codex 主持说明，不计入外部模型 | 不需要 |
 
 ## 命令
@@ -21,6 +21,7 @@
 ```bash
 python3 scripts/setup_model_pool.py --doctor
 python3 scripts/setup_model_pool.py --init
+python3 scripts/setup_model_pool.py connect deepseek --store auto --prompt-key
 python3 scripts/check_model_pool.py --config templates/model-pool.example.json
 python3 scripts/check_model_pool.py --config templates/model-pool.providers.example.json
 ```
@@ -51,11 +52,12 @@ python3 scripts/check_model_pool.py \
 
 ## 安全规则
 
-- 配置文件只保存环境变量名，例如 `OPENAI_API_KEY`，不保存真实密钥。
-- 真实密钥建议保存在系统环境变量、macOS Keychain、1Password、Bitwarden、dotenv 本地私有文件或模型 CLI 自己的登录态中。
+- 配置文件只保存 `secret_ref`、环境变量名或 CLI 命令，不保存真实密钥。
+- `--store auto` 默认选择系统安全凭据：macOS Keychain、Windows DPAPI、Linux Secret Service。
+- 如果系统安全凭据不可用，则提示使用环境变量、1Password、Bitwarden、dotenv 本地私有文件或模型 CLI 自己的登录态。
 - 报告不得打印完整密钥。
 - 占位 base_url、model 或 command 输出 `missing_config`，引导用户补配置，不执行占位命令。
-- 缺少密钥时输出 `missing_secret`，不得伪装成功。
+- 缺少密钥时输出 `missing_secret`，并提示使用 `setup_model_pool.py connect <model> --store auto --prompt-key`，不得伪装成功。
 - CLI 命令由用户本地环境负责权限和密钥管理。
 
 ## 候选发现

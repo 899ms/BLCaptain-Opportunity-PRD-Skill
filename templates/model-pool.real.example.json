@@ -7,7 +7,10 @@
       "method": "openai_compatible",
       "base_url": "https://api.example.com/v1",
       "model": "model-a-example",
-      "api_key_env": "MODEL_A_API_KEY",
+      "secret_ref": {
+        "type": "env",
+        "env": "MODEL_A_API_KEY"
+      },
       "capability_tags": ["structure", "general", "long_context"],
       "test_prompt": "ping"
     },
@@ -17,7 +20,10 @@
       "method": "openai_compatible",
       "base_url": "https://api.example.com/v1",
       "model": "model-b-example",
-      "api_key_env": "MODEL_B_API_KEY",
+      "secret_ref": {
+        "type": "env",
+        "env": "MODEL_B_API_KEY"
+      },
       "capability_tags": ["commercial_reverse", "business", "general"],
       "test_prompt": "ping"
     },

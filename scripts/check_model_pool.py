@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 import os
 import shutil
@@ -19,6 +20,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CONFIG = ROOT / "templates" / "model-pool.example.json"
 HOST_METHOD = "codex_builtin"
+SECRET_SERVICE = "blcaptain-opportunity-prd"
 CLI_CANDIDATES = [
     {
         "display_name": "Claude CLI",
@@ -60,6 +62,111 @@ def redact(value: str | None) -> str:
     if not value:
         return ""
     return value[:2] + "***" + value[-2:] if len(value) > 4 else "***"
+
+
+def windows_secret_file() -> Path:
+    base = Path(os.environ.get("APPDATA", Path.home()))
+    return base / "BLCaptain Opportunity PRD Skill" / "secrets.json"
+
+
+def windows_dpapi_unprotect(blob: bytes) -> str:
+    if sys.platform != "win32":
+        raise RuntimeError("windows_dpapi 只支持 Windows")
+    import ctypes
+    from ctypes import wintypes
+
+    class DATA_BLOB(ctypes.Structure):
+        _fields_ = [("cbData", wintypes.DWORD), ("pbData", ctypes.POINTER(ctypes.c_ubyte))]
+
+    in_buffer = ctypes.create_string_buffer(blob)
+    in_blob = DATA_BLOB(len(blob), ctypes.cast(in_buffer, ctypes.POINTER(ctypes.c_ubyte)))
+    out_blob = DATA_BLOB()
+
+    if not ctypes.windll.crypt32.CryptUnprotectData(
+        ctypes.byref(in_blob),
+        None,
+        None,
+        None,
+        None,
+        0,
+        ctypes.byref(out_blob),
+    ):
+        raise RuntimeError("Windows DPAPI 解密失败")
+    try:
+        data = ctypes.string_at(out_blob.pbData, out_blob.cbData)
+        return data.decode("utf-8")
+    finally:
+        ctypes.windll.kernel32.LocalFree(out_blob.pbData)
+
+
+def read_macos_keychain(service: str, account: str) -> str:
+    result = subprocess.run(
+        ["security", "find-generic-password", "-s", service, "-a", account, "-w"],
+        text=True,
+        capture_output=True,
+        timeout=10,
+    )
+    if result.returncode != 0:
+        raise RuntimeError("macOS Keychain 未找到对应凭据")
+    return result.stdout.strip()
+
+
+def read_secret_service(service: str, account: str) -> str:
+    if not shutil.which("secret-tool"):
+        raise RuntimeError("未发现 secret-tool")
+    result = subprocess.run(
+        ["secret-tool", "lookup", "service", service, "account", account],
+        text=True,
+        capture_output=True,
+        timeout=10,
+    )
+    if result.returncode != 0 or not result.stdout.strip():
+        raise RuntimeError("Secret Service 未找到对应凭据")
+    return result.stdout.strip()
+
+
+def read_windows_dpapi(account: str) -> str:
+    path = windows_secret_file()
+    if not path.exists():
+        raise RuntimeError("Windows DPAPI 凭据文件不存在")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    encoded = payload.get(account)
+    if not encoded:
+        raise RuntimeError("Windows DPAPI 未找到对应账号")
+    return windows_dpapi_unprotect(base64.b64decode(encoded))
+
+
+def resolve_model_secret(model: dict[str, Any]) -> dict[str, str]:
+    secret_ref = model.get("secret_ref") or {}
+    if secret_ref:
+        ref_type = secret_ref.get("type", "")
+        service = secret_ref.get("service", SECRET_SERVICE)
+        account = secret_ref.get("account", model.get("id", "unknown"))
+        try:
+            if ref_type == "keychain":
+                return {"value": read_macos_keychain(service, account), "source": f"keychain:{account}"}
+            if ref_type == "windows_dpapi":
+                return {"value": read_windows_dpapi(account), "source": f"windows_dpapi:{account}"}
+            if ref_type == "secret_service":
+                return {"value": read_secret_service(service, account), "source": f"secret_service:{account}"}
+            if ref_type == "env":
+                env_name = secret_ref.get("env") or secret_ref.get("name")
+                value = os.environ.get(env_name or "", "")
+                if not value:
+                    return {"value": "", "source": f"env:{env_name}", "reason": f"环境变量 {env_name or 'API_KEY'} 未设置"}
+                return {"value": value, "source": f"env:{env_name}"}
+            return {"value": "", "source": ref_type or "unknown", "reason": f"不支持的 secret_ref.type：{ref_type}"}
+        except (OSError, RuntimeError, subprocess.SubprocessError, json.JSONDecodeError, UnicodeDecodeError) as exc:
+            return {"value": "", "source": ref_type, "reason": str(exc)}
+
+    api_key_env = model.get("api_key_env")
+    if api_key_env:
+        value = os.environ.get(api_key_env, "")
+        if not value:
+            return {"value": "", "source": f"env:{api_key_env}", "reason": f"环境变量 {api_key_env} 未设置"}
+        return {"value": value, "source": f"env:{api_key_env}"}
+
+    return {"value": "", "source": "none", "reason": "缺少 secret_ref 或 api_key_env"}
 
 
 def is_placeholder(value: Any) -> bool:
@@ -110,10 +217,10 @@ def check_openai_compatible(model: dict[str, Any], timeout: int) -> dict[str, An
     if is_placeholder(base_url) or is_placeholder(model_name):
         return {"health": "missing_config", "reason": "base_url 或 model 仍是占位内容"}
 
-    api_key_env = model.get("api_key_env")
-    api_key = os.environ.get(api_key_env, "") if api_key_env else ""
+    secret = resolve_model_secret(model)
+    api_key = secret.get("value", "")
     if not api_key:
-        return {"health": "missing_secret", "reason": f"环境变量 {api_key_env or 'API_KEY'} 未设置"}
+        return {"health": "missing_secret", "reason": secret.get("reason", "未找到 API Key"), "secret_source": secret.get("source", "")}
 
     payload = {
         "model": model_name,
@@ -138,14 +245,14 @@ def check_openai_compatible(model: dict[str, Any], timeout: int) -> dict[str, An
         with urllib.request.urlopen(request, timeout=timeout) as response:
             response.read(2048)
     except urllib.error.HTTPError as exc:
-        return {"health": "failed", "reason": f"http {exc.code}", "secret": redact(api_key)}
+        return {"health": "failed", "reason": f"http {exc.code}", "secret_source": secret.get("source", "")}
     except urllib.error.URLError as exc:
-        return {"health": "failed", "reason": str(exc.reason)[:160], "secret": redact(api_key)}
+        return {"health": "failed", "reason": str(exc.reason)[:160], "secret_source": secret.get("source", "")}
     except TimeoutError:
-        return {"health": "failed", "reason": f"timeout>{timeout}s", "secret": redact(api_key)}
+        return {"health": "failed", "reason": f"timeout>{timeout}s", "secret_source": secret.get("source", "")}
 
     elapsed_ms = int((time.time() - start) * 1000)
-    return {"health": "ok", "reason": "chat completions 已返回", "latency_ms": elapsed_ms}
+    return {"health": "ok", "reason": "chat completions 已返回", "latency_ms": elapsed_ms, "secret_source": secret.get("source", "")}
 
 
 def check_model(model: dict[str, Any], timeout: int) -> dict[str, Any]:
@@ -232,11 +339,13 @@ def config_required_guidance() -> list[str]:
         "",
         "1. 让 Codex 帮你配置，推荐",
         "   - 直接说：帮我接入 DeepSeek / GLM / Claude / Gemini / Grok / 本地模型",
-        "   - 如果你有 API Key，只告诉 Codex 你想使用的环境变量名，不要发送真实 key",
+        "   - 如果你有 API Key，推荐让脚本隐藏输入并保存到系统安全凭据；配置文件只保存 secret_ref",
+        "   - 如果你愿意直接粘贴 Key，Codex 也应立即写入本机安全凭据，不写入 JSON 或日志",
         "   - 如果你有 CLI，只提供本机非交互命令",
         "",
         "2. DeepSeek / GLM / Gemini / Grok / 其他 OpenAI-compatible 模型",
-        "   - 需要：base_url、model 名称、API Key 环境变量名",
+        "   - 最简单：`python3 scripts/setup_model_pool.py connect deepseek --store auto --prompt-key`",
+        "   - 默认会使用系统安全凭据存储；缺省 base_url 和 model 可后续覆盖",
         "   - 不要把真实 API Key 写进配置文件",
         "",
         "3. Claude / Claude Code / 本地模型 CLI",

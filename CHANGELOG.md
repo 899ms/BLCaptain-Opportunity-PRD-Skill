@@ -1,5 +1,34 @@
 # Changelog
 
+## v1.2.8
+
+### Added
+
+- Added `setup_model_pool.py connect <model>` for one-step model connection.
+- Added `--store auto` secret storage selection:
+  - macOS Keychain
+  - Windows DPAPI user-level encryption
+  - Linux Secret Service
+  - environment-variable fallback guidance when secure storage is unavailable
+- Added `secret_ref` support in model health checks and workflow model invocation.
+- Added simulation coverage for safe API-key setup without writing real keys to model-pool JSON.
+
+### Changed
+
+- Made “connect the model, then safely save the key” the default onboarding path.
+- Reframed environment variables as an advanced or fallback option instead of the primary new-user path.
+- Updated README, Skill instructions, templates, and model configuration references to explain cross-platform secure storage.
+
+### Verified
+
+- `python3 -m py_compile scripts/*.py`
+- `python3 scripts/setup_model_pool.py connect deepseek --store auto --dry-run`
+- `python3 scripts/setup_model_pool.py connect deepseek --store env --api-key-env BLCAPTAIN_TEST_DEEPSEEK_KEY --config tests/runs/secure-connect-model-pool.json`
+- `python3 scripts/check_model_pool.py --config tests/runs/secure-connect-model-pool.json`
+- `python3 scripts/quick_validate.py`
+- `python3 scripts/simulate_user_flow.py`
+- Sensitive information and unrelated reference-trace audit
+
 ## v1.2.7
 
 ### Added

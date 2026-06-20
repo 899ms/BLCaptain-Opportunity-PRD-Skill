@@ -6,7 +6,7 @@
 
 | Agent 类型 | 可接入示例 | 配置字段 | 适合职责 |
 |---|---|---|---|
-| OpenAI-compatible | DeepSeek、GLM、Gemini、Grok、自建网关 | `base_url`、`model`、`api_key_env` | 主分析、结构化、商业反方、外部趋势 |
+| OpenAI-compatible | DeepSeek、GLM、Gemini、Grok、自建网关 | `base_url`、`model`、`secret_ref` | 主分析、结构化、商业反方、外部趋势 |
 | 长文本 CLI | Claude CLI、Claude Code、本地长上下文模型 | `command` | 长评论理解、反向压力测试、综合审查 |
 | 代码/原型 CLI | Composer、代码生成 CLI、本地脚本 | `command` | 工程可行性、原型视角、任务拆分 |
 | 本地模型 CLI | Ollama、本地推理脚本 | `command` | 低成本初筛、隐私敏感样本本地处理 |

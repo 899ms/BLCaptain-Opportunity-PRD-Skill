@@ -1,10 +1,11 @@
 {
   "version": "1.0",
-  "description": "默认空模型池。新用户请复制 templates/model-pool.providers.example.json 中的示例到这里，或创建自己的本地配置文件。",
+  "description": "默认空模型池。新用户优先运行 scripts/setup_model_pool.py connect <model> --store auto --prompt-key，或复制 templates/model-pool.providers.example.json 中的示例到自己的本地配置文件。",
   "security_notes": [
     "不要把真实 API Key 写进本文件。",
-    "只填写环境变量名，例如 DEEPSEEK_API_KEY、GLM_API_KEY、GEMINI_API_KEY、GROK_API_KEY。",
-    "真实密钥建议保存在系统环境变量、Keychain、1Password、Bitwarden、dotenv 本地私有文件或各模型 CLI 自己的登录态中。",
+    "OpenAI-compatible 模型优先只保存 secret_ref。",
+    "真实密钥建议保存在系统安全凭据：macOS Keychain、Windows DPAPI、Linux Secret Service。",
+    "环境变量、1Password、Bitwarden、dotenv 本地私有文件或各模型 CLI 登录态是高级或兜底方式。",
     "本仓库不会读取或托管你的真实密钥。"
   ],
   "models": []

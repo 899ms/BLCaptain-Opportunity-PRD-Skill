@@ -7,7 +7,7 @@
 ![Python](https://img.shields.io/badge/Python-%3E%3D3.10-2b2622.svg)
 ![Agent Skill](https://img.shields.io/badge/Agent-Skill-d98e3a.svg)
 ![Evidence Based](https://img.shields.io/badge/PRD-Evidence--Based-2f5ea7.svg)
-[![Release](https://img.shields.io/github/v/release/dososo/BLCaptain-Opportunity-PRD-Skill?label=Release)](https://github.com/dososo/BLCaptain-Opportunity-PRD-Skill/releases/tag/v1.2.7)
+[![Release](https://img.shields.io/github/v/release/dososo/BLCaptain-Opportunity-PRD-Skill?label=Release)](https://github.com/dososo/BLCaptain-Opportunity-PRD-Skill/releases/tag/v1.2.8)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ## First Run
@@ -77,7 +77,6 @@ The simplest path is to ask Codex to configure the model for you after installat
 
 ```text
 Use BLCaptain Opportunity PRD Skill to connect DeepSeek.
-I have an API key, and I want the environment variable name to be DEEPSEEK_API_KEY.
 ```
 
 Or:
@@ -92,17 +91,35 @@ Codex should then:
 1. Decide whether the model should use `openai_compatible` or `cli`.
 2. Create or update a local model config file.
 3. Remind you not to put real API keys in JSON.
-4. Explain how to store secrets in environment variables, Keychain, 1Password, Bitwarden, a private local dotenv file, or the model CLI login state.
+4. Guide you to save the key in local secure storage through hidden terminal input, or use environment variables, a password manager, private dotenv, or CLI login state when you explicitly choose that path.
 5. Run the health check and explain whether the status is `config_required`, `low_confidence`, `standard`, or `heavy_discussion`.
 
 The health check also shows connection candidates, such as Claude CLI, Gemini CLI, Ollama, local models, or common OpenAI-compatible providers. Candidates are only setup hints; they are not counted as usable models until written into the model pool JSON and passed by the health check.
+
+Recommended commands for API-key models:
+
+```bash
+python3 scripts/setup_model_pool.py connect deepseek --store auto --prompt-key
+python3 scripts/setup_model_pool.py connect glm --store auto --prompt-key
+python3 scripts/setup_model_pool.py connect gemini --store auto --prompt-key
+python3 scripts/setup_model_pool.py connect grok --store auto --prompt-key
+```
+
+`--store auto` selects local secure storage:
+
+| OS | Default Storage | Notes |
+|---|---|---|
+| macOS | Keychain | system keychain |
+| Windows | Windows DPAPI | encrypted for the current Windows user |
+| Linux | Secret Service | requires a local keyring |
+| unavailable | environment-variable guidance | no plaintext default |
 
 If you prefer manual setup:
 
 1. Create a local model config, for example `my-model-pool.json`.
 2. Copy the model entries you need from `templates/model-pool.providers.example.json`.
-3. Fill only `base_url`, `model`, `api_key_env`, or `command`.
-4. Store real secrets in environment variables, macOS Keychain, 1Password, Bitwarden, a private local dotenv file, or the model CLI login state.
+3. Fill only `base_url`, `model`, `secret_ref`, or `command`.
+4. Store real secrets in local secure storage, environment variables, 1Password, Bitwarden, a private local dotenv file, or the model CLI login state.
 5. Run the health check and confirm at least one external model is usable.
 
 OpenAI-compatible example:
@@ -114,7 +131,10 @@ OpenAI-compatible example:
   "method": "openai_compatible",
   "base_url": "fill the official OpenAI-compatible Base URL",
   "model": "fill the model name",
-  "api_key_env": "DEEPSEEK_API_KEY",
+  "secret_ref": {
+    "type": "env",
+    "env": "DEEPSEEK_API_KEY"
+  },
   "capability_tags": ["general", "structure", "commercial_reverse"],
   "test_prompt": "ping"
 }
@@ -149,7 +169,7 @@ Status meanings:
 
 Security rules:
 
-- Keep only model names, call methods, and environment variable names in config files.
+- Keep only model names, call methods, `secret_ref`, environment variable names, or CLI commands in config files.
 - Never commit real API keys, tokens, cookies, or account data.
 - Codex is the host and should not be added to the external model pool.
 - Missing settings or secrets are reported as `missing_config` / `missing_secret`; the Skill does not pretend they work.

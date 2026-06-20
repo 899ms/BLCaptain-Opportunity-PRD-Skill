@@ -211,10 +211,10 @@ def invoke_cli_model(model: dict[str, Any], prompt: str, timeout: int) -> str:
 
 
 def invoke_openai_compatible(model: dict[str, Any], prompt: str, timeout: int) -> str:
-    api_key_env = model.get("api_key_env")
-    api_key = os.environ.get(api_key_env, "") if api_key_env else ""
+    secret = check_model_pool.resolve_model_secret(model)
+    api_key = secret.get("value", "")
     if not api_key:
-        return f"未调用：环境变量 {api_key_env or 'API_KEY'} 未设置"
+        return f"未调用：{secret.get('reason', '未找到 API Key')}"
 
     payload = {
         "model": model["model"],
@@ -847,7 +847,7 @@ def build_model_setup_prd(
         ]
     )
     stories = [
-        ("作为新用户，我想看到支持哪些模型 Agent 和最小配置方式，以便不用先读完整文档。", "生成欢迎页，列出 OpenAI-compatible、CLI、本地模型和 Codex 主持边界。", "不承诺自动获取或保存真实密钥。"),
+        ("作为新用户，我想看到支持哪些模型 Agent 和最小配置方式，以便不用先读完整文档。", "生成欢迎页，列出 OpenAI-compatible、CLI、本地模型和 Codex 主持边界。", "不自动获取密钥，不把真实密钥写入配置文件或输出。"),
         ("作为新用户，我想运行一次健康检查，以便知道模型池是否能进入机会分析。", "输出 Markdown 和 JSON，包含 config_required、low_confidence、standard、heavy_discussion。", "不把候选 CLI 直接算作可用模型。"),
         ("作为用户，我想看到错误原因和修复建议，以便快速处理 missing_config、missing_secret、timeout。", "每个错误码都有原因、修复动作和安全提醒。", "不处理绕过登录、接码或账号规避。"),
     ]
@@ -900,7 +900,7 @@ def build_model_setup_prd(
             "|---|---|---|---|",
             "| CLI | Python argparse | 无依赖、易安装、适合 Codex 调用 | 复杂 TUI |",
             "| 配置 | 本地 JSON | 易审计、可复制、无服务依赖 | 远程配置中心 |",
-            "| 密钥 | 环境变量、Keychain、密码管理器、CLI 登录态 | 不把真实密钥写进仓库 | 明文 key 文件 |",
+            "| 密钥 | 系统安全凭据、环境变量、密码管理器、CLI 登录态 | 不把真实密钥写进仓库 | 明文 key 文件 |",
             "| 输出 | Markdown + JSON | 人可读、机器可读 | 云端 Dashboard |",
             "| 诊断 | 规则优先 | 可解释、低成本 | 全量 LLM 排错 |",
             "",
@@ -913,7 +913,7 @@ def build_model_setup_prd(
             "| LLM fallback | P0 不默认调用 LLM；只有用户显式要求解释复杂错误时才调用 |",
             "| 置信度 | 健康检查通过为 high，命令失败为 low，候选发现为 candidate_only |",
             "| 低置信度处理 | 只允许低置信度初筛，不声称多模型讨论 |",
-            "| 人工复核 | 用户确认命令、base_url、model 和 api_key_env 是否正确 |",
+            "| 人工复核 | 用户确认命令、base_url、model 和 secret_ref 是否正确 |",
             "| 成本上限 | 默认健康检查 max_tokens 极低，失败时停止重试，避免意外付费 |",
             "",
             "## 10. 数据模型与字段字典",
@@ -961,7 +961,7 @@ def build_model_setup_prd(
             "|---|---|---|---|",
             "| 配置不存在 | 输出首次向导 | 请运行 --init 或让 Codex 接入模型 | MODEL_CONFIG_MISSING |",
             "| 占位配置 | 不执行占位命令 | 请填写真实 base_url、model 或 command | MODEL_CONFIG_PLACEHOLDER |",
-            "| 密钥缺失 | 不调用 API | 请设置 api_key_env 对应环境变量 | MODEL_SECRET_MISSING |",
+            "| 密钥缺失 | 不调用 API | 请通过 setup_model_pool.py connect 保存系统安全凭据，或设置 api_key_env 对应环境变量 | MODEL_SECRET_MISSING |",
             "| CLI 超时 | 标记 failed | 请检查命令是否非交互 | MODEL_TIMEOUT |",
             "| 候选 CLI | 只提示可接入 | 写入模型池并通过检查后才可用 | MODEL_CANDIDATE_ONLY |",
             "| 用户要求绕过验证 | 拒绝进入 PRD | 该方向不符合安全边界 | UNSUPPORTED_COMPLIANCE_BYPASS |",

@@ -209,12 +209,12 @@ def validate_simulation_script(errors: list[str]) -> None:
 
 def validate_p1_files(errors: list[str]) -> None:
     model_script = read_text("scripts/check_model_pool.py")
-    for marker in ["openai_compatible", "missing_secret", "cli", "api_key_env", "redact", "discover_cli_candidates", "json-output"]:
+    for marker in ["openai_compatible", "missing_secret", "cli", "api_key_env", "secret_ref", "resolve_model_secret", "windows_dpapi", "redact", "discover_cli_candidates", "json-output"]:
         if marker not in model_script:
             errors.append(f"check_model_pool.py 缺少 {marker}")
 
     setup_script = read_text("scripts/setup_model_pool.py")
-    for marker in ["USER_CONFIG_PATH", "--init", "--doctor", "WELCOME_TEMPLATE", "health_payload"]:
+    for marker in ["USER_CONFIG_PATH", "--init", "--doctor", "connect", "--store", "--prompt-key", "windows_dpapi", "secret_service", "keychain", "secret_ref", "WELCOME_TEMPLATE", "health_payload"]:
         if marker not in setup_script:
             errors.append(f"setup_model_pool.py 缺少 {marker}")
 

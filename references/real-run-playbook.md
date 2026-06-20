@@ -9,7 +9,7 @@
 | 文件 | 用途 |
 |---|---|
 | `templates/real-run-case.example.json` | 真实运行 case 配置模板 |
-| `templates/model-pool.real.example.json` | 真实模型配置模板，只保存环境变量名 |
+| `templates/model-pool.real.example.json` | 真实模型配置模板，只保存 `secret_ref` 或环境变量名 |
 | `templates/model-pool.providers.example.json` | DeepSeek、GLM、Claude CLI、Gemini、Grok、本地模型配置示例 |
 | `scripts/prepare_real_run.py` | 审计 URL、生成快照、检查模型、可选运行 P3 工作流 |
 
@@ -21,10 +21,10 @@
 cp templates/real-run-case.example.json tests/runs/my-real-case.json
 ```
 
-2. 参考 `templates/model-pool.providers.example.json` 配置模型。真实密钥只放到环境变量、macOS Keychain、1Password、Bitwarden、dotenv 本地私有文件或模型 CLI 登录态中，不写进 JSON。配置文件只写环境变量名，例如：
+2. 优先使用 `scripts/setup_model_pool.py connect <model> --store auto --prompt-key` 配置模型。真实密钥保存到系统安全凭据，不写进 JSON。手动配置时可参考 `templates/model-pool.providers.example.json`，配置文件只写 `secret_ref` 或环境变量名，例如：
 
 ```bash
-# 在你的 shell、Keychain、1Password、Bitwarden 或本地私有 dotenv 中准备真实密钥。
+# 在你的系统安全凭据、shell、1Password、Bitwarden 或本地私有 dotenv 中准备真实密钥。
 # 模型池 JSON 只保存变量名：DEEPSEEK_API_KEY、GLM_API_KEY、GEMINI_API_KEY、GROK_API_KEY。
 ```
 
@@ -68,6 +68,6 @@ python3 scripts/prepare_real_run.py \
 ## 停止线
 
 - 全部 URL 失败或被阻止：不要进入 Go，先补样本。
-- 外部模型全为 `missing_config`、`missing_secret` 或 `failed`：只做配置引导，不声称完成多模型讨论；Codex 只负责主持，不计入外部模型通过数。
+- 外部模型全为 `missing_config`、`missing_secret` 或 `failed`：只做配置引导，建议运行 `setup_model_pool.py connect <model> --store auto --prompt-key`，不声称完成多模型讨论；Codex 只负责主持，不计入外部模型通过数。
 - 公开 URL 中没有用户原话：只作趋势背景，不作需求证据。
 - 私密群、登录后台、付费 API：不自动抓取，只接受用户授权后导出的样本。

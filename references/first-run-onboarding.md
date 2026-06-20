@@ -21,7 +21,7 @@
 2. 支持的模型 Agent 类型：OpenAI-compatible、CLI、本地模型、代码/原型 Agent。
 3. 用户可以直接说“帮我接入某个模型”。
 4. 推荐本地配置路径：`~/.config/blcaptain-opportunity-prd/model-pool.json`。
-5. 密钥安全：只写环境变量名，不写真实 key。
+5. 密钥安全：优先写 `secret_ref`，真实 Key 保存到系统安全凭据；不得把真实 key 写入 JSON。
 6. 健康检查命令。
 7. 配置完成前不进入机会分析。
 
@@ -30,6 +30,7 @@
 ```bash
 python3 scripts/setup_model_pool.py --doctor
 python3 scripts/setup_model_pool.py --init
+python3 scripts/setup_model_pool.py connect deepseek --store auto --prompt-key
 python3 scripts/check_model_pool.py --config ~/.config/blcaptain-opportunity-prd/model-pool.json
 ```
 
@@ -40,7 +41,7 @@ python3 scripts/check_model_pool.py --config ~/.config/blcaptain-opportunity-prd
 1. 判断接入方式：OpenAI-compatible 或 CLI。
 2. 只追问最少必要信息。
 3. 生成或更新用户本地模型池配置。
-4. 提醒真实密钥放在环境变量、Keychain、密码管理器、本地私有 dotenv 或 CLI 登录态。
+4. 提醒真实密钥优先放入系统安全凭据：macOS Keychain、Windows DPAPI、Linux Secret Service。
 5. 运行健康检查。
 6. 根据通过模型数量说明可进入的工作模式。
 

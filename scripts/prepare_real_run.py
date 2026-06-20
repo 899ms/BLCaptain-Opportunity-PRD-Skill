@@ -249,7 +249,7 @@ def audit_markdown(case: dict[str, Any], audit_items: list[dict[str, Any]], mode
             "## 下一步",
             "",
             "- 若来源不足，补充公开 URL、本地导出文件或用户粘贴样本。",
-            "- 若模型为 `missing_secret`，只需要设置对应环境变量，不要把真实密钥写入 JSON。",
+            "- 若模型为 `missing_secret`，优先运行 `setup_model_pool.py connect <model> --store auto --prompt-key`，不要把真实密钥写入 JSON。",
             "- 来源和模型都可用后，运行 P3 工作流生成机会评估；只有 Go 时生成 PRD。",
         ]
     )

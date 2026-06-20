@@ -23,7 +23,7 @@ python3 scripts/run_opportunity_workflow.py \
 - 默认不调用真实付费模型，只生成动态分工和讨论任务。
 - 只有显式传入 `--run-discussion` 时，才调用健康检查通过的 CLI 或 OpenAI-compatible 模型。
 - `codex_builtin` 不由脚本重复调用，也不计入外部模型通过数；Codex 始终负责主持、综合、文件生成和校验。
-- OpenAI-compatible 只读取环境变量中的 API Key，不把密钥写入输出文件。
+- OpenAI-compatible 优先读取 `secret_ref` 指向的本机安全凭据，也兼容环境变量；不得把密钥写入输出文件。
 
 ## 输出目录
 
